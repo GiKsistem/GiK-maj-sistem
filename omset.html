@@ -1,0 +1,1511 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pencapaian Omset</title>
+<link rel="icon" type="image/png" href="favicon.png">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#161a1d">
+<link rel="apple-touch-icon" href="icon-192.png">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+  :root{
+    --bg:#15181d;
+    --panel:#1e2229;
+    --panel2:#262b33;
+    --line:#333941;
+    --text:#e7e9ec;
+    --sub:#9aa2ad;
+    --amber:#f2a93b;
+    --amber-dim:#4a3a1d;
+    --red:#e2504a;
+    --red-dim:#432321;
+    --green:#3fae7a;
+    --green-dim:#1c3a2c;
+    --mono: ui-monospace, "SF Mono", Consolas, monospace;
+    --sans: -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; background:var(--bg); color:var(--text); font-family:var(--sans);
+    min-height:100vh;
+  }
+  .shell{max-width:1300px; margin:0 auto; padding:20px 20px 60px;}
+  header.top{
+    display:flex; align-items:baseline; justify-content:space-between; gap:12px;
+    border-bottom:2px solid var(--amber); padding-bottom:14px; margin-bottom:18px; flex-wrap:wrap;
+  }
+  header.top .brand{display:flex; align-items:baseline; gap:10px;}
+  header.top .brand .mark{
+    font-family:var(--mono); font-weight:700; color:var(--bg); background:var(--amber);
+    padding:2px 8px; border-radius:3px; font-size:13px; letter-spacing:1px;
+  }
+  header.top h1{font-size:20px; margin:0; font-weight:700; letter-spacing:.2px;}
+  header.top .sub{color:var(--sub); font-size:12.5px;}
+
+  nav.tabs{display:flex; gap:4px; margin-bottom:20px; flex-wrap:wrap;}
+  nav.tabs button{
+    background:var(--panel); color:var(--sub); border:1px solid var(--line);
+    padding:9px 16px; border-radius:6px 6px 0 0; cursor:pointer; font-size:13.5px; font-weight:600;
+    border-bottom:none; position:relative; top:1px;
+  }
+  nav.tabs button.active{background:var(--panel2); color:var(--amber); border-color:var(--amber);}
+  section.panel{
+    background:var(--panel2); border:1px solid var(--line); border-radius:0 8px 8px 8px;
+    padding:22px; min-height:400px;
+  }
+  h2.ptitle{margin:0 0 4px; font-size:16px;}
+  p.pdesc{color:var(--sub); font-size:13px; margin:0 0 18px;}
+
+  .row{display:flex; gap:14px; flex-wrap:wrap; align-items:flex-end;}
+  .field{display:flex; flex-direction:column; gap:5px;}
+  .field label{font-size:11.5px; color:var(--sub); text-transform:uppercase; letter-spacing:.5px;}
+  select, input[type=text], input[type=number]{
+    background:var(--panel); border:1px solid var(--line); color:var(--text);
+    padding:8px 10px; border-radius:5px; font-size:13.5px; font-family:var(--sans);
+  }
+  input[type=number]{font-family:var(--mono); width:150px;}
+  button.btn{
+    background:var(--amber); color:#1a1300; border:none; padding:9px 16px; border-radius:5px;
+    font-weight:700; font-size:13.5px; cursor:pointer;
+  }
+  button.btn.ghost{background:transparent; border:1px solid var(--line); color:var(--text);}
+  button.btn.danger{background:var(--red); color:#2a0d0b;}
+  button.btn:disabled{opacity:.4; cursor:not-allowed;}
+
+  .dropzone{
+    border:2px dashed var(--line); border-radius:8px; padding:30px; text-align:center;
+    color:var(--sub); cursor:pointer; font-size:13.5px; transition:.15s;
+  }
+  .dropzone:hover{border-color:var(--amber); color:var(--text);}
+  .dropzone input{display:none;}
+
+  table.data{width:100%; border-collapse:collapse; font-size:12.5px; margin-top:10px;}
+  table.data th, table.data td{border:1px solid var(--line); padding:5px 8px; text-align:right;}
+  table.data th{background:var(--panel); color:var(--sub); font-weight:600; text-align:center; font-size:11px; text-transform:uppercase;}
+  table.data td.label{text-align:left; color:var(--text); font-weight:600; background:var(--panel);}
+  table.data td.sub{text-align:left; color:var(--sub); padding-left:18px;}
+  table.data tr.total td{font-weight:700; background:#20252c;}
+  table.data td.num{font-family:var(--mono);}
+  td.warn{background:var(--amber-dim); color:var(--amber); font-weight:700;}
+  td.zero{background:var(--red-dim); color:var(--red); font-weight:700;}
+  td.ok{color:var(--text);}
+
+  .pill{display:inline-block; padding:2px 8px; border-radius:20px; font-size:11px; font-weight:700;}
+  .pill.green{background:var(--green-dim); color:var(--green);}
+  .pill.amber{background:var(--amber-dim); color:var(--amber);}
+  .pill.red{background:var(--red-dim); color:var(--red);}
+
+  .legend{display:flex; gap:16px; margin:12px 0; font-size:12px; color:var(--sub); flex-wrap:wrap;}
+  .legend span.dot{display:inline-block; width:10px; height:10px; border-radius:2px; margin-right:5px; vertical-align:middle;}
+
+  .toko-list{max-height:420px; overflow:auto; border:1px solid var(--line); border-radius:6px;}
+  .toko-list table{width:100%; border-collapse:collapse; font-size:12.5px;}
+  .toko-list th{position:sticky; top:0; background:var(--panel); padding:8px; text-align:left; color:var(--sub); font-size:11px; text-transform:uppercase;}
+  .toko-list td{padding:6px 8px; border-top:1px solid var(--line);}
+  .toko-list td.code{font-family:var(--mono); color:var(--amber);}
+
+  .banner{
+    background:var(--amber-dim); border:1px solid var(--amber); color:var(--amber);
+    padding:12px 16px; border-radius:6px; font-size:13px; margin-bottom:16px;
+  }
+  .banner.info{background:#1d2733; border-color:#3a5a78; color:#8fc4ec;}
+  .banner.success{background:var(--green-dim); border-color:var(--green); color:var(--green);}
+
+  .unknown-card{
+    background:var(--panel); border:1px solid var(--line); border-radius:6px; padding:14px; margin-bottom:10px;
+  }
+  .unknown-card .code{font-family:var(--mono); color:var(--amber); font-size:13.5px; font-weight:700;}
+  .unknown-card .amt{color:var(--sub); font-size:12px; margin:2px 0 10px;}
+
+  .stat-grid{display:grid; grid-template-columns:repeat(auto-fit, minmax(180px,1fr)); gap:12px; margin-bottom:18px;}
+  .stat{background:var(--panel); border:1px solid var(--line); border-radius:8px; padding:14px;}
+  .stat .num{font-family:var(--mono); font-size:22px; font-weight:700; color:var(--amber);}
+  .stat .lbl{font-size:11.5px; color:var(--sub); text-transform:uppercase; letter-spacing:.4px; margin-top:2px;}
+
+  .block-head{
+    background:#20252c; padding:8px 12px; font-weight:700; font-size:13px; color:var(--amber);
+    border:1px solid var(--line); border-bottom:none; border-radius:6px 6px 0 0; margin-top:18px;
+  }
+  small.hint{color:var(--sub); display:block; margin-top:4px; font-size:11.5px;}
+
+  /* ---- Laporan gaya spreadsheet (sesuai contoh) ---- */
+  .sheet-wrap{overflow-x:auto; margin-top:14px; background:#fff; border-radius:6px; padding:2px;}
+  table.sheet{border-collapse:collapse; font-size:12px; font-family:var(--sans); color:#1a1a1a; width:100%;}
+  table.sheet th, table.sheet td{border:1px solid #999; padding:4px 7px; text-align:right; white-space:nowrap;}
+  table.sheet th{background:#4472C4; color:#fff; font-size:11px; text-transform:uppercase;}
+  table.sheet td.lbl-wilayah{background:#F4C892; color:#1a1a1a; font-weight:700; text-align:center; vertical-align:middle; white-space:normal;}
+  table.sheet td.lbl-divisi{background:#C6E0B4; color:#1a1a1a; font-weight:700; text-align:center; vertical-align:middle; white-space:normal;}
+  table.sheet td.lbl-desc{background:#eef1f5; color:#1a1a1a; text-align:left; font-weight:600;}
+  table.sheet td.lbl-desc.sub{font-weight:500; padding-left:16px; font-style:italic; color:#333;}
+  table.sheet td.na{background:#A6A6A6; color:#A6A6A6;}
+  table.sheet td.v-red{background:#FF0000; color:#fff; font-weight:700;}
+  table.sheet td.v-yellow{background:#FFFF00; color:#1a1a1a; font-weight:700;}
+  table.sheet td.v-green{background:#3FAE7A; color:#fff; font-weight:700;}
+  table.sheet td.v-total{background:#DCE6F1; font-weight:700;}
+  table.sheet td.v-pct{font-style:italic; background:#f7f7f7;}
+  table.sheet td.v-plain{background:#fff;}
+  table.sheet tr.divider td{border-top:2px solid #444;}
+  table.sheet .month-head{background:#8EA9DB; color:#1a1a1a; text-align:center; font-weight:700;}
+
+  .sim-grid{display:grid; grid-template-columns:repeat(auto-fit, minmax(260px,1fr)); gap:12px; margin-bottom:18px;}
+  .sim-card{background:var(--panel); border:1px solid var(--line); border-radius:8px; padding:14px;}
+  .sim-card h4{margin:0 0 2px; font-size:14px; color:var(--amber);}
+  .sim-card .wilinfo{font-size:11px; color:var(--sub); margin-bottom:10px; text-transform:uppercase; letter-spacing:.4px;}
+  .sim-card .achnow{font-family:var(--mono); font-size:20px; font-weight:700;}
+  .sim-card .achnow.low{color:var(--red);} .sim-card .achnow.mid{color:var(--amber);} .sim-card .achnow.high{color:var(--green);}
+  .sim-card .achnow-lbl{font-size:11px; color:var(--sub); margin-bottom:10px;}
+  .sim-card .pct-row{display:flex; gap:6px; margin-bottom:8px; flex-wrap:wrap;}
+  .sim-card .pct-chip{background:var(--panel2); border:1px solid var(--line); color:var(--sub); padding:4px 10px; border-radius:20px; font-size:11.5px; cursor:pointer;}
+  .sim-card .pct-chip.active{border-color:var(--amber); color:var(--amber);}
+  .sim-card .pct-input-row{display:flex; align-items:center; gap:8px; margin-bottom:10px;}
+  .sim-card .pct-input-row input{width:70px;}
+  .sim-card .result{background:var(--panel2); border-radius:6px; padding:10px; font-size:12.5px;}
+  .sim-card .result .short{font-family:var(--mono); font-size:16px; font-weight:700; color:var(--red);}
+  .sim-card .result.done .short{color:var(--green);}
+</style>
+</head>
+<body>
+<div class="shell">
+  <a href="index.html" style="display:inline-block;margin-bottom:12px;font-family:var(--sans);font-size:13px;color:var(--sub);text-decoration:none;border:1px solid var(--line);padding:6px 12px;border-radius:6px;">&larr; Kembali ke Menu</a>
+  <header class="top">
+    <div class="brand">
+      <span class="mark">MAJ</span>
+      <h1>Pencapaian Omset</h1>
+    </div>
+    <div class="sub" id="statusLine">Memuat data tersimpan…</div>
+  </header>
+  <div class="row" style="margin-bottom:14px;">
+    <button class="btn ghost" id="backupBtn" style="font-size:12px; padding:6px 12px;">⬇ Cadangkan Data (.json)</button>
+    <button class="btn ghost" id="backupLightBtn" style="font-size:12px; padding:6px 12px;">⬇ Cadangkan Toko &amp; Target saja</button>
+    <label class="btn ghost" style="font-size:12px; padding:6px 12px; cursor:pointer;">
+      ⬆ Pulihkan dari Cadangan (gabungkan)
+      <input type="file" id="restoreFile" accept=".json" style="display:none;">
+    </label>
+    <label style="display:flex; align-items:center; gap:5px; font-size:11.5px; color:var(--sub);">
+      <input type="checkbox" id="restoreReplaceMode" style="width:auto;"> Timpa total (bukan gabung)
+    </label>
+    <span style="color:var(--sub); font-size:11.5px; align-self:center;">Data otomatis tersimpan di browser laptop ini. Bisa pulihkan beberapa file cadangan berturut-turut, otomatis digabung.</span>
+  </div>
+
+  <nav class="tabs">
+    <button data-tab="toko" class="active">1. Daftar Toko</button>
+    <button data-tab="target">2. Target Bulanan</button>
+    <button data-tab="upload">3. Upload Penjualan</button>
+    <button data-tab="laporan">4. Laporan</button>
+    <button data-tab="qtykpi">5. Target QTY &amp; KPI</button>
+  </nav>
+
+  <section class="panel" id="tab-toko">
+    <h2 class="ptitle">Daftar Toko</h2>
+    <p class="pdesc">Master toko dipakai untuk menentukan Wilayah tiap toko. Kategori Padang / Motoris / Luar Kota / Sales Counter dihitung otomatis dari kode toko, tidak perlu diisi manual.</p>
+    <div class="stat-grid" id="tokoStats"></div>
+    <label class="dropzone" id="tokoDrop">
+      <input type="file" id="tokoFile" accept=".xlsx,.xls">
+      <div>📂 Klik atau drop file Excel daftar toko di sini<br><small class="hint">Kolom yang dibaca: Kode Toko, Nama Toko, Wilayah. Upload akan menambah/memperbarui toko (toko lama tidak terhapus).</small></div>
+    </label>
+    <div class="row" style="margin-top:14px;">
+      <div class="field">
+        <label>Cari toko</label>
+        <input type="text" id="tokoSearch" placeholder="kode atau nama toko...">
+      </div>
+      <div class="field">
+        <label>Tambah toko manual</label>
+        <div class="row">
+          <input type="text" id="newKode" placeholder="Kode toko" style="width:160px;">
+          <input type="text" id="newNama" placeholder="Nama toko" style="width:220px;">
+          <select id="newWilayah"><option value="1">Wilayah 1</option><option value="2">Wilayah 2</option><option value="3">Wilayah 3</option></select>
+          <button class="btn" id="addTokoBtn">Tambah</button>
+        </div>
+      </div>
+    </div>
+    <div class="toko-list" style="margin-top:14px;">
+      <table>
+        <thead><tr><th>Kode Toko</th><th>Nama</th><th>Wilayah</th><th>Kategori (otomatis)</th><th></th></tr></thead>
+        <tbody id="tokoTableBody"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="panel" id="tab-target" style="display:none;">
+    <h2 class="ptitle">Target Bulanan</h2>
+    <p class="pdesc">Isi target omset per Wilayah / Divisi / bulan. Target Matic dan Target AOS dihitung otomatis (36% AP2, 58.3% ATI, 34.2% ATU, 32% FP2 dari target; AOS = 30% dari total target divisi).</p>
+    <div class="row">
+      <div class="field">
+        <label>Bulan</label>
+        <select id="targetBulan"></select>
+      </div>
+      <div class="field">
+        <label>Wilayah</label>
+        <select id="targetWilayah"><option value="1">Wilayah 1</option><option value="2">Wilayah 2</option><option value="3">Wilayah 3</option></select>
+      </div>
+    </div>
+    <div class="row" style="margin-top:12px;">
+      <div class="field">
+        <label>Nama Sales Divisi 1</label>
+        <input type="text" id="salesNameDiv1" placeholder="mis. JAKA">
+      </div>
+      <div class="field">
+        <label>Nama Sales Divisi 2</label>
+        <input type="text" id="salesNameDiv2" placeholder="mis. FERNANDO">
+      </div>
+    </div>
+    <div id="targetForm" style="margin-top:16px;"></div>
+    <button class="btn" id="saveTargetBtn" style="margin-top:14px;">Simpan Target</button>
+    <span id="targetSavedMsg" style="color:var(--green); margin-left:10px; font-size:13px;"></span>
+  </section>
+
+  <section class="panel" id="tab-upload" style="display:none;">
+    <h2 class="ptitle">Upload Data Penjualan</h2>
+    <p class="pdesc">Upload flat file penjualan (kumulatif dari awal bulan). Data bulan yang sama akan menggantikan (bukan menumpuk) data sebelumnya. Perhitungan pakai kolom DPP.</p>
+    <label class="dropzone" id="jualDrop">
+      <input type="file" id="jualFile" accept=".xlsx,.xls">
+      <div>📂 Klik atau drop flat file penjualan di sini (.xls / .xlsx)<br><small class="hint">Kolom yang dibaca: ID PELANGGAN, NAMA SALES, PRODUCT CATEGORY NAME 2 &amp; 4, DPP, BULAN, TAHUN</small></div>
+    </label>
+    <div id="uploadResult"></div>
+    <div id="unknownStoreArea"></div>
+  </section>
+
+  <section class="panel" id="tab-laporan" style="display:none;">
+    <h2 class="ptitle">Laporan Pencapaian</h2>
+    <div class="row">
+      <div class="field">
+        <label>Bulan</label>
+        <select id="laporanBulan"></select>
+      </div>
+      <button class="btn ghost" id="exportBtn">⬇ Export ke Excel (.xlsx)</button>
+    </div>
+    <div class="legend">
+      <span><span class="dot" style="background:var(--amber-dim); border:1px solid var(--amber);"></span>Kuning = omset di bawah Rp1.000.000</span>
+      <span><span class="dot" style="background:var(--red-dim); border:1px solid var(--red);"></span>Merah = omset kosong / tidak jualan</span>
+    </div>
+    <h3 style="margin:22px 0 4px; color:var(--amber);">Target Capaian per Salesman</h3>
+    <p class="pdesc" style="margin-bottom:10px;">Klik salah satu persen, atau isi sendiri — kekurangan omsetnya otomatis muncul.</p>
+    <div id="salesmanSimArea"></div>
+    <div id="laporanArea"></div>
+  </section>
+
+  <section class="panel" id="tab-qtykpi" style="display:none;">
+    <h2 class="ptitle">Target QTY &amp; KPI</h2>
+    <p class="pdesc">Target QTY per SKU (kode L4) dicocokkan otomatis ke kolom "MG 4" di flat file penjualan. KPI (Collection, OA, SKU, Qty) per Wilayah/Divisi — Collection Anda isi manual, sisanya dihitung otomatis dari data yang sudah diupload.</p>
+    <div class="row">
+      <div class="field">
+        <label>Bulan</label>
+        <select id="qtyBulan"></select>
+      </div>
+      <div class="field">
+        <label>Wilayah</label>
+        <select id="qtyWilayah"><option value="1">Wilayah 1</option><option value="2">Wilayah 2</option><option value="3">Wilayah 3</option></select>
+      </div>
+      <div class="field">
+        <label>Divisi</label>
+        <select id="qtyDivisi"><option value="1">Divisi 1</option><option value="2">Divisi 2</option><option value="all">Divisi All</option></select>
+      </div>
+    </div>
+    <h3 style="margin:20px 0 6px; color:var(--amber);">KPI Ringkas</h3>
+    <div id="kpiArea"></div>
+    <h3 style="margin:20px 0 6px; color:var(--amber);">Target QTY per SKU (kode L4)</h3>
+    <p class="pdesc">Kolom Target bisa diedit langsung (klik, ketik, otomatis tersimpan). Kolom Act &amp; Ach% dihitung otomatis.</p>
+    <div class="row" style="margin-bottom:14px;">
+      <div class="field">
+        <label>Filter Kode L4</label>
+        <input type="text" id="qtyFilterL4" placeholder="mis. L401...">
+      </div>
+      <div class="field" style="min-width:220px;">
+        <label>Filter Nama Produk</label>
+        <input type="text" id="qtyFilterNama" placeholder="cari nama produk...">
+      </div>
+      <div class="field">
+        <label>Warna Act Qty</label>
+        <div style="display:flex; gap:10px; align-items:center; padding:8px 0;">
+          <label style="display:flex; align-items:center; gap:4px; font-size:12.5px; color:var(--text); text-transform:none; letter-spacing:0;">
+            <input type="checkbox" class="qty-color-filter" value="v-red" checked style="width:auto;"> <span class="dot" style="background:#FF0000; display:inline-block; width:10px; height:10px; border-radius:2px;"></span> Merah
+          </label>
+          <label style="display:flex; align-items:center; gap:4px; font-size:12.5px; color:var(--text); text-transform:none; letter-spacing:0;">
+            <input type="checkbox" class="qty-color-filter" value="v-yellow" checked style="width:auto;"> <span class="dot" style="background:#FFFF00; display:inline-block; width:10px; height:10px; border-radius:2px;"></span> Kuning
+          </label>
+          <label style="display:flex; align-items:center; gap:4px; font-size:12.5px; color:var(--text); text-transform:none; letter-spacing:0;">
+            <input type="checkbox" class="qty-color-filter" value="v-plain" checked style="width:auto;"> <span class="dot" style="background:#fff; border:1px solid #999; display:inline-block; width:10px; height:10px; border-radius:2px;"></span> Putih
+          </label>
+          <label style="display:flex; align-items:center; gap:4px; font-size:12.5px; color:var(--text); text-transform:none; letter-spacing:0;">
+            <input type="checkbox" class="qty-color-filter" value="v-green" checked style="width:auto;"> <span class="dot" style="background:#3FAE7A; display:inline-block; width:10px; height:10px; border-radius:2px;"></span> Hijau
+          </label>
+        </div>
+      </div>
+      <div class="field">
+        <label>&nbsp;</label>
+        <button class="btn ghost" id="qtyExportBtn">⬇ Export ke Excel (.xlsx)</button>
+      </div>
+    </div>
+    <div id="qtyTableArea"></div>
+  </section>
+</div>
+
+<script>
+window.QTY_TARGET_SEED = {"1":[{"l4":"L01","nama":"ASPIRA 2W - MAINTENANCE PARTS","divisi":1,"target":{"1":3404.3943,"2":3415.2582,"3":3435.2559,"4":3153.1987,"5":3309.2358,"6":3382.1345,"7":3350.8815,"8":3353.535,"9":3301.2829,"10":3261.9991,"11":3243.5632,"12":2779.5381}},{"l4":"L02","nama":"ASPIRA 2W - CAM CHAIN & SILENT CHAIN","divisi":1,"target":{"1":252.0862,"2":252.8906,"3":254.3714,"4":233.4858,"5":245.0399,"6":250.4379,"7":248.1237,"8":248.3202,"9":244.451,"10":241.5422,"11":240.1771,"12":205.8173}},{"l4":"L03","nama":"ASPIRA 2W - BULB","divisi":1,"target":{"1":1967.0569,"2":1973.3341,"3":1984.8887,"4":1821.9163,"5":1912.0744,"6":1954.1952,"7":1936.1372,"8":1937.6704,"9":1907.4792,"10":1884.781,"11":1874.1288,"12":1606.0154}},{"l4":"L04","nama":"ASPIRA 2W - SPARK PLUG","divisi":1,"target":{"1":2269.9297,"2":2277.1733,"3":2290.5071,"4":2102.4413,"5":2206.4813,"6":2255.0876,"7":2234.2492,"8":2236.0185,"9":2201.1786,"10":2174.9855,"11":2162.6932,"12":1853.2977}},{"l4":"L05","nama":"ASPIRA 2W - BACK MIRROR","divisi":1,"target":{"1":382.7847,"2":384.0062,"3":386.2547,"4":354.5406,"5":372.0852,"6":380.2818,"7":376.7678,"8":377.0661,"9":371.191,"10":366.774,"11":364.7011,"12":312.5268}},{"l4":"L06","nama":"ASPIRA 2W - BEARING","divisi":1,"target":{"1":5285.3449,"2":5302.2111,"3":5333.2577,"4":4895.362,"5":5137.6107,"6":5250.7864,"7":5202.2659,"8":5206.3854,"9":5125.2637,"10":5064.2753,"11":5035.6536,"12":4315.2515}},{"l4":"N01","nama":"ASPIRA 2W - DRIVE CHAIN (KIT & ONLY)","divisi":1,"target":{"1":462.8505,"2":464.3275,"3":467.0463,"4":428.6988,"5":449.9131,"6":459.8241,"7":455.5751,"8":455.9358,"9":448.8318,"10":443.4909,"11":440.9844,"12":377.8971}},{"l4":"N02","nama":"ASPIRA 2W - DISK CLUTCH NON-MATIC","divisi":1,"target":{"1":375.4745,"2":376.6727,"3":378.8782,"4":347.7698,"5":364.9793,"6":373.0194,"7":369.5725,"8":369.8652,"9":364.1022,"10":359.7695,"11":357.7362,"12":306.5584}},{"l4":"N03","nama":"ASPIRA 2W - CLUTCH SYSTEM PARTS N-MATIC","divisi":1,"target":{"1":60.7515,"2":60.9454,"3":61.3023,"4":56.2689,"5":59.0534,"6":60.3543,"7":59.7966,"8":59.8439,"9":58.9115,"10":58.2105,"11":57.8815,"12":49.601}},{"l4":"N04","nama":"ASPIRA 2W - PISTON KIT NON-MATIC","divisi":1,"target":{"1":323.1874,"2":324.2187,"3":326.1171,"4":299.3408,"5":314.1538,"6":321.0742,"7":318.1073,"8":318.3592,"9":313.3988,"10":309.6695,"11":307.9193,"12":263.8683}},{"l4":"N06","nama":"ASPIRA 2W - CYLINDER BLOCK KIT NON-MATIC","divisi":1,"target":{"1":98.9569,"2":99.2727,"3":99.854,"4":91.6553,"5":96.1909,"6":98.3099,"7":97.4014,"8":97.4785,"9":95.9597,"10":94.8178,"11":94.282,"12":80.794}},{"l4":"N07","nama":"ASPIRA 2W - BRAKE SHOE NON-MATIC","divisi":1,"target":{"1":3201.5173,"2":3211.7338,"3":3230.5398,"4":2965.2911,"5":3112.0295,"6":3180.584,"7":3151.1934,"8":3153.6888,"9":3104.5506,"10":3067.6077,"11":3050.2706,"12":2613.898}},{"l4":"N08","nama":"ASPIRA 2W - PAD SET NON-MATIC","divisi":1,"target":{"1":425.607,"2":426.9652,"3":429.4652,"4":394.2033,"5":413.7106,"6":422.8241,"7":418.917,"8":419.2487,"9":412.7163,"10":407.8052,"11":405.5004,"12":347.4894}},{"l4":"N09","nama":"ASPIRA 2W - ELECTRICAL PARTS NON-MATIC","divisi":1,"target":{"1":432.9941,"2":434.3759,"3":436.9193,"4":401.0454,"5":420.8912,"6":430.163,"7":426.188,"8":426.5255,"9":419.8797,"10":414.8833,"11":412.5385,"12":353.5207}},{"l4":"N10","nama":"ASPIRA 2W - CDI & ECU NON-MATIC","divisi":1,"target":{"1":17.8138,"2":17.8706,"3":17.9753,"4":16.4994,"5":17.3159,"6":17.6973,"7":17.5338,"8":17.5477,"9":17.2742,"10":17.0687,"11":16.9722,"12":14.5442}},{"l4":"N11","nama":"ASPIRA 2W - CUSHION NON-MATIC","divisi":1,"target":{"1":88.8765,"2":89.1601,"3":89.6822,"4":82.3187,"5":86.3923,"6":88.2954,"7":87.4795,"8":87.5488,"9":86.1847,"10":85.1591,"11":84.6778,"12":72.5638}},{"l4":"N12","nama":"ASPIRA 2W - VALVE NON-MATIC","divisi":1,"target":{"1":156.9383,"2":157.4391,"3":158.3609,"4":145.3585,"5":152.5516,"6":155.9121,"7":154.4714,"8":154.5937,"9":152.1849,"10":150.374,"11":149.5241,"12":128.1332}},{"l4":"N13","nama":"ASPIRA 2W - ENGINE PARTS NON-MATIC","divisi":1,"target":{"1":1405.0187,"2":1409.5023,"3":1417.7555,"4":1301.3484,"5":1365.7461,"6":1395.8319,"7":1382.9335,"8":1384.0287,"9":1362.4638,"10":1346.2511,"11":1338.6425,"12":1147.1359}},{"l4":"N14","nama":"ASPIRA 2W - GASKET SET NON-MATIC","divisi":1,"target":{"1":69.7931,"2":70.0158,"3":70.4258,"4":64.6434,"5":67.8423,"6":69.3367,"7":68.696,"8":68.7504,"9":67.6792,"10":66.8739,"11":66.4959,"12":56.983}},{"l4":"N15","nama":"ASPIRA 2W - ELEMENT AIR CLEANER N-MATIC","divisi":1,"target":{"1":67.4846,"2":67.7,"3":68.0964,"4":62.5052,"5":65.5983,"6":67.0434,"7":66.4238,"8":66.4764,"9":65.4406,"10":64.6619,"11":64.2965,"12":55.0982}},{"l4":"N16","nama":"ASPIRA 2W - CONN ROD KIT NON-MATIC","divisi":1,"target":{"1":82.7975,"2":83.0617,"3":83.5481,"4":76.6883,"5":80.4832,"6":82.2562,"7":81.4961,"8":81.5606,"9":80.2898,"10":79.3344,"11":78.886,"12":67.6005}},{"l4":"N17","nama":"ASPIRA 2W - DAMPER SET NON-MATIC","divisi":1,"target":{"1":644.9127,"2":646.9707,"3":650.759,"4":597.3274,"5":626.8863,"6":640.6959,"7":634.7755,"8":635.2782,"9":625.3798,"10":617.938,"11":614.4456,"12":526.5429}},{"l4":"N18","nama":"ASPIRA 2W - FRAME PARTS NON-MATIC","divisi":1,"target":{"1":1081.0233,"2":1084.473,"3":1090.823,"4":1001.2593,"5":1050.8069,"6":1073.955,"7":1064.031,"8":1064.8736,"9":1048.2816,"10":1035.8075,"11":1029.9534,"12":882.608}},{"l4":"N19","nama":"ASPIRA 2W - CABLE NON-MATIC","divisi":1,"target":{"1":74.6409,"2":74.8791,"3":75.3175,"4":69.1335,"5":72.5546,"6":74.1529,"7":73.4676,"8":73.5258,"9":72.3802,"10":71.5189,"11":71.1147,"12":60.941}},{"l4":"N20","nama":"ASPIRA 2W - RIM WHEEL SPOKE SET N-MATIC","divisi":1,"target":{"1":1349.7305,"2":1354.0377,"3":1361.9661,"4":1250.1397,"5":1312.0033,"6":1340.9053,"7":1328.5145,"8":1329.5665,"9":1308.8502,"10":1293.2755,"11":1285.9663,"12":1101.9956}},{"l4":"N21","nama":"ASPIRA 2W - CAM CHAIN KIT NON-MATIC","divisi":1,"target":{"1":2363.4231,"2":2370.9652,"3":2384.8481,"4":2189.0363,"5":2297.3615,"6":2347.9698,"7":2326.2731,"8":2328.1152,"9":2291.8404,"10":2264.5685,"11":2251.7698,"12":1929.631}},{"l4":"N22","nama":"ASPIRA 2W - DISK BRAKE NON-MATIC","divisi":1,"target":{"1":11.35,"2":11.3863,"3":11.4529,"4":10.5126,"5":11.0328,"6":11.2758,"7":11.1716,"8":11.1805,"9":11.0063,"10":10.8753,"11":10.8138,"12":9.2668}},{"l4":"N23","nama":"ASPIRA 2W - CYLINDER SET MASTER NONMATIC","divisi":1,"target":{"1":162.2862,"2":162.8041,"3":163.7574,"4":150.3118,"5":157.7501,"6":161.2251,"7":159.7353,"8":159.8618,"9":157.371,"10":155.4983,"11":154.6195,"12":132.4996}},{"l4":"N24","nama":"GASKET SATUAN NON-MATIC","divisi":1,"target":{"1":4.9248,"2":4.9405,"3":4.9694,"4":4.5614,"5":4.7871,"6":4.8926,"7":4.8473,"8":4.8512,"9":4.7756,"10":4.7188,"11":4.6921,"12":4.0208}},{"l4":"PO1","nama":"ASPIRA EXPOSIO 2W - BULB","divisi":1,"target":{"1":14.3965,"2":14.4424,"3":14.527,"4":13.3342,"5":13.9941,"6":14.3023,"7":14.1702,"8":14.1814,"9":13.9604,"10":13.7943,"11":13.7163,"12":11.7541}},{"l4":"PO3","nama":"ASPIRA EXPOSIO 2W - SPOKE SET","divisi":1,"target":{"1":17.9854,"2":18.0428,"3":18.1484,"4":16.6583,"5":17.4827,"6":17.8678,"7":17.7027,"8":17.7167,"9":17.4406,"10":17.2331,"11":17.1357,"12":14.6843}},{"l4":"M01","nama":"ASPIRA 2W - V-BELT (KIT & ONLY)","divisi":1,"target":{"1":978.5267,"2":981.6494,"3":987.3973,"4":906.3255,"5":951.1753,"6":972.1286,"7":963.1455,"8":963.9082,"9":948.8894,"10":937.598,"11":932.299,"12":798.924}},{"l4":"M02","nama":"ASPIRA 2W - CLUTCH SYSTEM PARTS MATIC","divisi":1,"target":{"1":286.8288,"2":287.7441,"3":289.429,"4":265.6649,"5":278.8115,"6":284.9534,"7":282.3202,"8":282.5438,"9":278.1414,"10":274.8316,"11":273.2784,"12":234.1831}},{"l4":"M03","nama":"ASPIRA 2W - MOVEABLE DRIVE FACE SET","divisi":1,"target":{"1":118.8483,"2":119.2276,"3":119.9257,"4":110.079,"5":115.5263,"6":118.0712,"7":116.9802,"8":117.0728,"9":115.2487,"10":113.8773,"11":113.2337,"12":97.0344}},{"l4":"M04","nama":"ASPIRA 2W - PULLEY (ASSY & ONLY)","divisi":1,"target":{"1":305.1428,"2":306.1165,"3":307.9089,"4":282.6276,"5":296.6135,"6":303.1476,"7":300.3463,"8":300.5841,"9":295.9007,"10":292.3796,"11":290.7271,"12":249.1356}},{"l4":"M05","nama":"ASPIRA 2W - PISTON KIT MATIC","divisi":1,"target":{"1":446.114,"2":447.5376,"3":450.1581,"4":413.1972,"5":433.6444,"6":443.1971,"7":439.1017,"8":439.4494,"9":432.6022,"10":427.4544,"11":425.0386,"12":364.2325}},{"l4":"M07","nama":"ASPIRA 2W - CYLINDER BLOCK KIT MATIC","divisi":1,"target":{"1":33.2421,"2":33.3482,"3":33.5435,"4":30.7893,"5":32.313,"6":33.0248,"7":32.7196,"8":32.7455,"9":32.2353,"10":31.8517,"11":31.6717,"12":27.1407}},{"l4":"M08","nama":"ASPIRA 2W - BRAKE SHOE MATIC","divisi":1,"target":{"1":2822.8109,"2":2831.8189,"3":2848.4003,"4":2614.5279,"5":2743.9087,"6":2804.3538,"7":2778.4399,"8":2780.6401,"9":2737.3144,"10":2704.7415,"11":2689.4551,"12":2304.7009}},{"l4":"M09","nama":"ASPIRA 2W - PAD SET MATIC","divisi":1,"target":{"1":1658.1052,"2":1663.3964,"3":1673.1363,"4":1535.7607,"5":1611.7584,"6":1647.2636,"7":1632.0418,"8":1633.3342,"9":1607.8849,"10":1588.7518,"11":1579.7726,"12":1353.7699}},{"l4":"M10","nama":"ASPIRA 2W - ELECTRICAL PARTS MATIC","divisi":1,"target":{"1":344.0022,"2":345.0999,"3":347.1206,"4":318.6197,"5":334.3868,"6":341.7529,"7":338.5949,"8":338.863,"9":333.5831,"10":329.6136,"11":327.7508,"12":280.8626}},{"l4":"M11","nama":"ASPIRA 2W - CDI & ECU MATIC","divisi":1,"target":{"1":12.2734,"2":12.3126,"3":12.3847,"4":11.3678,"5":11.9304,"6":12.1932,"7":12.0805,"8":12.0901,"9":11.9017,"10":11.7601,"11":11.6936,"12":10.0207}},{"l4":"M12","nama":"ASPIRA 2W - CUSHION MATIC","divisi":1,"target":{"1":208.4174,"2":209.0825,"3":210.3067,"4":193.0392,"5":202.5918,"6":207.0546,"7":205.1413,"8":205.3038,"9":202.1049,"10":199.6999,"11":198.5713,"12":170.1636}},{"l4":"M13","nama":"ASPIRA 2W - VALVE MATIC","divisi":1,"target":{"1":49.2861,"2":49.4434,"3":49.7329,"4":45.6495,"5":47.9084,"6":48.9638,"7":48.5114,"8":48.5498,"9":47.7933,"10":47.2246,"11":46.9577,"12":40.2399}},{"l4":"M14","nama":"ASPIRA 2W - ENGINE PARTS MATIC","divisi":1,"target":{"1":217.4974,"2":218.1915,"3":219.4691,"4":201.4492,"5":211.418,"6":216.0753,"7":214.0786,"8":214.2482,"9":210.9099,"10":208.4002,"11":207.2224,"12":177.5771}},{"l4":"M15","nama":"ASPIRA 2W - GASKET SET MATIC","divisi":1,"target":{"1":103.6123,"2":103.943,"3":104.5516,"4":95.9672,"5":100.7162,"6":102.9349,"7":101.9837,"8":102.0644,"9":100.4742,"10":99.2786,"11":98.7175,"12":84.5949}},{"l4":"M16","nama":"ASPIRA 2W - ELEMENT AIR CLEANER MATIC","divisi":1,"target":{"1":567.7325,"2":569.5442,"3":572.8791,"4":525.842,"5":551.8634,"6":564.0204,"7":558.8085,"8":559.251,"9":550.5372,"10":543.986,"11":540.9116,"12":463.5286}},{"l4":"M17","nama":"ASPIRA 2W - CONN ROD KIT MATIC","divisi":1,"target":{"1":54.788,"2":54.9628,"3":55.2846,"4":50.7454,"5":53.2565,"6":54.4297,"7":53.9268,"8":53.9695,"9":53.1286,"10":52.4963,"11":52.1997,"12":44.732}},{"l4":"M18","nama":"ASPIRA 2W - FRAME PARTS MATIC","divisi":1,"target":{"1":737.5213,"2":739.8748,"3":744.2071,"4":683.1028,"5":716.9063,"6":732.699,"7":725.9284,"8":726.5032,"9":715.1834,"10":706.6731,"11":702.6792,"12":602.1537}},{"l4":"M19","nama":"ASPIRA 2W - CABLE MATIC","divisi":1,"target":{"1":192.6812,"2":193.2961,"3":194.4279,"4":178.4641,"5":187.2955,"6":191.4214,"7":189.6525,"8":189.8027,"9":186.8454,"10":184.622,"11":183.5786,"12":157.3158}},{"l4":"M22","nama":"ASPIRA 2W - DISK BRAKE MATIC","divisi":1,"target":{"1":14.9667,"2":15.0144,"3":15.1023,"4":13.8623,"5":14.5483,"6":14.8688,"7":14.7314,"8":14.7431,"9":14.5133,"10":14.3406,"11":14.2596,"12":12.2196}},{"l4":"M23","nama":"ASPIRA 2W - CYLINDER SET MASTER MATIC","divisi":1,"target":{"1":172.2512,"2":172.8009,"3":173.8127,"4":159.5415,"5":167.4365,"6":171.1249,"7":169.5436,"8":169.6779,"9":167.0341,"10":165.0464,"11":164.1137,"12":140.6355}},{"l4":"M24","nama":"GASKET SATUAN MATIC","divisi":1,"target":{"1":9.2339,"2":9.2634,"3":9.3176,"4":8.5526,"5":8.9758,"6":9.1735,"7":9.0888,"8":9.096,"9":8.9543,"10":8.8477,"11":8.7977,"12":7.5391}},{"l4":"FG1","nama":"FP - CAM CHAIN & SILENT CHAIN","divisi":2,"target":{"1":474.0741,"2":475.587,"3":478.3717,"4":439.0942,"5":460.823,"6":470.9744,"7":466.6223,"8":466.9918,"9":459.7155,"10":454.2451,"11":451.6778,"12":387.0607}},{"l4":"FG2","nama":"FP - BRAKE MASTER CYLINDER","divisi":2,"target":{"1":1804.5414,"2":1810.3,"3":1820.9,"4":1671.3921,"5":1754.1015,"6":1792.7424,"7":1776.1763,"8":1777.5828,"9":1749.886,"10":1729.0631,"11":1719.2909,"12":1473.3287}},{"l4":"FG3","nama":"FP - BULB","divisi":2,"target":{"1":259.634,"2":260.4625,"3":261.9877,"4":240.4767,"5":252.3768,"6":257.9364,"7":255.5529,"8":255.7553,"9":251.7703,"10":248.7743,"11":247.3683,"12":211.9798}},{"l4":"FG4","nama":"FP - SPARK PLUG","divisi":2,"target":{"1":421.4896,"2":422.8346,"3":425.3105,"4":390.3897,"5":409.7082,"6":418.7336,"7":414.8643,"8":415.1928,"9":408.7236,"10":403.86,"11":401.5775,"12":344.1277}},{"l4":"FG5","nama":"FP - BACK MIRROR","divisi":2,"target":{"1":21.396,"2":21.4642,"3":21.5899,"4":19.8173,"5":20.7979,"6":21.2561,"7":21.0597,"8":21.0763,"9":20.7479,"10":20.501,"11":20.3852,"12":17.4689}},{"l4":"FG6","nama":"FP - BEARING","divisi":2,"target":{"1":3888.3022,"2":3900.7103,"3":3923.5505,"4":3601.4011,"5":3779.6176,"6":3862.8783,"7":3827.1829,"8":3830.2136,"9":3770.5343,"10":3725.6666,"11":3704.6102,"12":3174.6276}},{"l4":"FG7","nama":"FP - MAINTENANCE PARTS CARBURATOR","divisi":2,"target":{"1":393.5159,"2":394.7717,"3":397.0832,"4":364.4801,"5":382.5165,"6":390.9429,"7":387.3303,"8":387.637,"9":381.5972,"10":377.0563,"11":374.9253,"12":321.2884}},{"l4":"FG8","nama":"FP - MAINTENANCE PARTS TIRE SEALANT","divisi":2,"target":{"1":272.1242,"2":272.9926,"3":274.5911,"4":252.0454,"5":264.5179,"6":270.3449,"7":267.8468,"8":268.0589,"9":263.8822,"10":260.7421,"11":259.2685,"12":222.1775}},{"l4":"FG9","nama":"FP - MAINTENANCE PARTS LEM GASKET","divisi":2,"target":{"1":102.2129,"2":102.5391,"3":103.1395,"4":94.671,"5":99.3559,"6":101.5446,"7":100.6062,"8":100.6859,"9":99.1171,"10":97.9376,"11":97.3841,"12":83.4523}},{"l4":"FM1","nama":"FP - V-BELT & PAKET V-BELT","divisi":2,"target":{"1":367.1682,"2":368.3399,"3":370.4966,"4":340.0764,"5":356.9052,"6":364.7674,"7":361.3968,"8":361.6829,"9":356.0475,"10":351.8107,"11":349.8223,"12":299.7767}},{"l4":"FM4","nama":"FP - PISTON KIT MATIC","divisi":2,"target":{"1":12.5272,"2":12.5672,"3":12.6407,"4":11.6028,"5":12.177,"6":12.4453,"7":12.3303,"8":12.34,"9":12.1478,"10":12.0032,"11":11.9354,"12":10.2279}},{"l4":"FM6","nama":"FP - BRAKE SHOE MATIC","divisi":2,"target":{"1":1432.4215,"2":1436.9926,"3":1445.4067,"4":1326.7293,"5":1392.3829,"6":1423.0556,"7":1409.9056,"8":1411.0221,"9":1389.0367,"10":1372.5078,"11":1364.7508,"12":1169.5091}},{"l4":"FM7","nama":"FP - PAD SET MATIC","divisi":2,"target":{"1":1242.0011,"2":1245.9645,"3":1253.2601,"4":1150.3592,"5":1207.2851,"6":1233.8802,"7":1222.4784,"8":1223.4464,"9":1204.3837,"10":1190.052,"11":1183.3262,"12":1014.0392}},{"l4":"FM8","nama":"FP - ELECTRICAL PARTS MATIC","divisi":2,"target":{"1":465.464,"2":466.9494,"3":469.6835,"4":431.1194,"5":452.4535,"6":462.4206,"7":458.1475,"8":458.5103,"9":451.3662,"10":445.9951,"11":443.4745,"12":380.0309}},{"l4":"FM9","nama":"FP - STATOR COMP MATIC","divisi":2,"target":{"1":28.8605,"2":28.9526,"3":29.1222,"4":26.731,"5":28.0538,"6":28.6718,"7":28.4069,"8":28.4294,"9":27.9864,"10":27.6534,"11":27.4971,"12":23.5634}},{"l4":"FMA","nama":"FP - CUSHION MATIC","divisi":2,"target":{"1":85.8795,"2":86.1536,"3":86.658,"4":79.5428,"5":83.479,"6":85.318,"7":84.5296,"8":84.5965,"9":83.2784,"10":82.2874,"11":81.8224,"12":70.1168}},{"l4":"FMB","nama":"FP - KOMPONEN CUSHION MATIC","divisi":2,"target":{"1":34.5144,"2":34.6245,"3":34.8273,"4":31.9677,"5":33.5497,"6":34.2887,"7":33.9719,"8":33.9988,"9":33.469,"10":33.0708,"11":32.8839,"12":28.1795}},{"l4":"FMD","nama":"FP - CLUTCH SYSTEM MATIC","divisi":2,"target":{"1":181.5147,"2":182.0939,"3":183.1602,"4":168.1215,"5":176.4411,"6":180.3279,"7":178.6615,"8":178.803,"9":176.017,"10":173.9225,"11":172.9396,"12":148.1988}},{"l4":"FME","nama":"FP - GASKET MATIC","divisi":2,"target":{"1":605.8497,"2":607.783,"3":611.3418,"4":561.1466,"5":588.9152,"6":601.8883,"7":596.3265,"8":596.7987,"9":587.4999,"10":580.5089,"11":577.228,"12":494.6496}},{"l4":"FMF","nama":"FP - ENGINE PARTS MATIC","divisi":2,"target":{"1":81.8146,"2":82.0757,"3":82.5563,"4":75.7779,"5":79.5278,"6":81.2797,"7":80.5286,"8":80.5924,"9":79.3367,"10":78.3926,"11":77.9495,"12":66.7981}},{"l4":"FMG","nama":"FP - ELEMENT CLEANER MATIC","divisi":2,"target":{"1":280.5866,"2":281.4819,"3":283.1301,"4":259.8833,"5":272.7437,"6":278.7519,"7":276.1761,"8":276.3948,"9":272.0882,"10":268.8505,"11":267.331,"12":229.0866}},{"l4":"FMK","nama":"FP - CABLE MATIC","divisi":2,"target":{"1":229.4062,"2":230.1383,"3":231.4858,"4":212.4793,"5":222.9939,"6":227.9062,"7":225.8002,"8":225.979,"9":222.458,"10":219.8109,"11":218.5686,"12":187.3001}},{"l4":"FMN","nama":"FP 2W - PAKET CYLINDER BLOCK MATIC","divisi":2,"target":{"1":5.6169,"2":5.6348,"3":5.6678,"4":5.2025,"5":5.4599,"6":5.5802,"7":5.5286,"8":5.533,"9":5.4468,"10":5.382,"11":5.3515,"12":4.586}},{"l4":"FMO","nama":"FP 2W - MOVEABLE DRIVE FACE SET","divisi":2,"target":{"1":129.5583,"2":129.9718,"3":130.7328,"4":119.9988,"5":125.937,"6":128.7112,"7":127.5218,"8":127.6228,"9":125.6343,"10":124.1393,"11":123.4377,"12":105.7787}},{"l4":"FN1","nama":"FP - DRIVE CHAIN KIT","divisi":2,"target":{"1":90.6834,"2":90.9728,"3":91.5055,"4":83.9923,"5":88.1487,"6":90.0905,"7":89.258,"8":89.3287,"9":87.9368,"10":86.8904,"11":86.3994,"12":74.039}},{"l4":"FN2","nama":"FP - DRIVE CHAIN KIT HD","divisi":2,"target":{"1":20.9525,"2":21.0194,"3":21.1425,"4":19.4065,"5":20.3669,"6":20.8155,"7":20.6232,"8":20.6395,"9":20.3179,"10":20.0762,"11":19.9627,"12":17.1068}},{"l4":"FN3","nama":"FP - KOMPONEN DRIVE CHAIN","divisi":2,"target":{"1":55.2083,"2":55.3844,"3":55.7087,"4":51.1347,"5":53.6651,"6":54.8473,"7":54.3405,"8":54.3835,"9":53.5361,"10":52.8991,"11":52.6001,"12":45.0751}},{"l4":"FN4","nama":"FP - PISTON KIT NON MATIC","divisi":2,"target":{"1":56.8342,"2":57.0156,"3":57.3494,"4":52.6407,"5":55.2456,"6":56.4626,"7":55.9408,"8":55.9851,"9":55.1128,"10":54.457,"11":54.1492,"12":46.4026}},{"l4":"FN6","nama":"FP - BRAKE SHOE NON MATIC","divisi":2,"target":{"1":1341.5533,"2":1345.8344,"3":1353.7148,"4":1242.5659,"5":1304.0547,"6":1332.7815,"7":1320.4658,"8":1321.5114,"9":1300.9207,"10":1285.4403,"11":1278.1754,"12":1095.3192}},{"l4":"FN7","nama":"FP - PAD SET NON MATIC","divisi":2,"target":{"1":677.65,"2":679.8124,"3":683.793,"4":627.6491,"5":658.7085,"6":673.2191,"7":666.9982,"8":667.5263,"9":657.1255,"10":649.306,"11":645.6363,"12":553.2714}},{"l4":"FN8","nama":"FP - ELECTRICAL PARTS","divisi":2,"target":{"1":2086.0888,"2":2092.7458,"3":2104.9996,"4":1932.1653,"5":2027.7791,"6":2072.4488,"7":2053.2981,"8":2054.924,"9":2022.9059,"10":1998.8342,"11":1987.5374,"12":1703.1997}},{"l4":"FN9","nama":"FP - STATOR COMP","divisi":2,"target":{"1":103.8758,"2":104.2073,"3":104.8174,"4":96.2112,"5":100.9723,"6":103.1966,"7":102.243,"8":102.3239,"9":100.7296,"10":99.531,"11":98.9685,"12":84.81}},{"l4":"FNA","nama":"FP - CUSHION SET NON MATIC","divisi":2,"target":{"1":120.6895,"2":121.0747,"3":121.7836,"4":111.7844,"5":117.3161,"6":119.9004,"7":118.7925,"8":118.8865,"9":117.0341,"10":115.6415,"11":114.9879,"12":98.5377}},{"l4":"FNB","nama":"FP - KOMPONEN CUSHION SET","divisi":2,"target":{"1":583.6038,"2":585.4661,"3":588.8943,"4":540.5422,"5":567.2911,"6":579.7879,"7":574.4303,"8":574.8851,"9":565.9277,"10":559.1934,"11":556.033,"12":476.4868}},{"l4":"FNC","nama":"FP - DISK CLUTCH","divisi":2,"target":{"1":191.8616,"2":192.4739,"3":193.6009,"4":177.705,"5":186.4988,"6":190.6071,"7":188.8458,"8":188.9954,"9":186.0506,"10":183.8367,"11":182.7977,"12":156.6466}},{"l4":"FND","nama":"FP - CLUTCH SYSTEM","divisi":2,"target":{"1":254.941,"2":255.7545,"3":257.252,"4":236.13,"5":247.8149,"6":253.274,"7":250.9336,"8":251.1323,"9":247.2194,"10":244.2776,"11":242.897,"12":208.1481}},{"l4":"FNE","nama":"FP - GASKET","divisi":2,"target":{"1":913.4861,"2":916.4011,"3":921.767,"4":846.0839,"5":887.9526,"6":907.5132,"7":899.1272,"8":899.8392,"9":885.8186,"10":875.2778,"11":870.331,"12":745.8212}},{"l4":"FNF","nama":"FP - ENGINE PARTS","divisi":2,"target":{"1":475.1827,"2":476.6991,"3":479.4904,"4":440.121,"5":461.9006,"6":472.0757,"7":467.7135,"8":468.0838,"9":460.7905,"10":455.3073,"11":452.7341,"12":387.9658}},{"l4":"FNG","nama":"FP - ELEMENT CLEANER","divisi":2,"target":{"1":72.1329,"2":72.3631,"3":72.7868,"4":66.8105,"5":70.1166,"6":71.6612,"7":70.999,"8":71.0553,"9":69.9481,"10":69.1158,"11":68.7252,"12":58.8933}},{"l4":"FNH","nama":"FP - DAMPER SET","divisi":2,"target":{"1":906.2063,"2":909.0981,"3":914.4212,"4":839.3412,"5":880.8763,"6":900.281,"7":891.9618,"8":892.6682,"9":878.7593,"10":868.3025,"11":863.3951,"12":739.8775}},{"l4":"FNI","nama":"FP - FRAME PARTS","divisi":2,"target":{"1":91.2008,"2":91.4918,"3":92.0275,"4":84.4715,"5":88.6516,"6":90.6045,"7":89.7672,"8":89.8383,"9":88.4385,"10":87.3861,"11":86.8923,"12":74.4614}},{"l4":"FNK","nama":"FP - CABLE","divisi":2,"target":{"1":143.4528,"2":143.9106,"3":144.7532,"4":132.868,"5":139.443,"6":142.5148,"7":141.1979,"8":141.3097,"9":139.1079,"10":137.4526,"11":136.6758,"12":117.1229}},{"l4":"FNL","nama":"FP - MUFFLER","divisi":2,"target":{"1":13.8575,"2":13.9017,"3":13.9831,"4":12.835,"5":13.4702,"6":13.7669,"7":13.6397,"8":13.6505,"9":13.4378,"10":13.2779,"11":13.2028,"12":11.314}},{"l4":"FNM","nama":"FP - RIM WHEEL & SPOKE","divisi":2,"target":{"1":630.904,"2":632.9173,"3":636.6233,"4":584.3523,"5":613.2692,"6":626.7788,"7":620.987,"8":621.4787,"9":611.7954,"10":604.5153,"11":601.0987,"12":515.1054}},{"l4":"FNN","nama":"FP 2W - PAKET CYLINDER BLOCK NON-MATIC","divisi":2,"target":{"1":9.3492,"2":9.379,"3":9.4339,"4":8.6594,"5":9.0879,"6":9.2881,"7":9.2022,"8":9.2095,"9":9.066,"10":8.9581,"11":8.9075,"12":7.6332}}],"2":[{"l4":"L01","nama":"ASPIRA 2W - MAINTENANCE PARTS","divisi":1,"target":{"1":3055.4368,"2":3065.1872,"3":3083.1351,"4":2829.9893,"5":2970.0323,"6":3035.4587,"7":3007.4092,"8":3009.7907,"9":2962.8946,"10":2927.6374,"11":2911.0913,"12":2494.6297}},{"l4":"L02","nama":"ASPIRA 2W - CAM CHAIN & SILENT CHAIN","divisi":1,"target":{"1":226.2468,"2":226.9688,"3":228.2978,"4":209.553,"5":219.9228,"6":224.7675,"7":222.6905,"8":222.8668,"9":219.3943,"10":216.7836,"11":215.5584,"12":184.7206}},{"l4":"L03","nama":"ASPIRA 2W - BULB","divisi":1,"target":{"1":1765.4295,"2":1771.0632,"3":1781.4335,"4":1635.1661,"5":1716.0828,"6":1753.8862,"7":1737.6792,"8":1739.0552,"9":1711.9586,"10":1691.5871,"11":1682.0267,"12":1441.3955}},{"l4":"L04","nama":"ASPIRA 2W - SPARK PLUG","divisi":1,"target":{"1":2037.2572,"2":2043.7583,"3":2055.7254,"4":1886.9367,"5":1980.3124,"6":2023.9365,"7":2005.234,"8":2006.8219,"9":1975.5532,"10":1952.045,"11":1941.0126,"12":1663.3308}},{"l4":"L05","nama":"ASPIRA 2W - BACK MIRROR","divisi":1,"target":{"1":343.5485,"2":344.6448,"3":346.6628,"4":318.1995,"5":333.9457,"6":341.3021,"7":338.1483,"8":338.4161,"9":333.1431,"10":329.1789,"11":327.3185,"12":280.4922}},{"l4":"L06","nama":"ASPIRA 2W - BEARING","divisi":1,"target":{"1":4743.5861,"2":4758.7235,"3":4786.5877,"4":4393.5773,"5":4610.9949,"6":4712.5699,"7":4669.0228,"8":4672.7201,"9":4599.9136,"10":4545.1766,"11":4519.4886,"12":3872.9293}},{"l4":"N01","nama":"ASPIRA 2W - DRIVE CHAIN (KIT & ONLY)","divisi":1,"target":{"1":415.4074,"2":416.733,"3":419.1731,"4":384.7562,"5":403.796,"6":412.6912,"7":408.8777,"8":409.2015,"9":402.8256,"10":398.0322,"11":395.7826,"12":339.1618}},{"l4":"N02","nama":"ASPIRA 2W - DISK CLUTCH NON-MATIC","divisi":1,"target":{"1":336.9876,"2":338.0629,"3":340.0424,"4":312.1227,"5":327.5682,"6":334.7842,"7":331.6905,"8":331.9532,"9":326.781,"10":322.8924,"11":321.0675,"12":275.1355}},{"l4":"N03","nama":"ASPIRA 2W - CLUTCH SYSTEM PARTS N-MATIC","divisi":1,"target":{"1":54.5244,"2":54.6984,"3":55.0187,"4":50.5013,"5":53.0003,"6":54.1679,"7":53.6673,"8":53.7098,"9":52.873,"10":52.2438,"11":51.9485,"12":44.5168}},{"l4":"N04","nama":"ASPIRA 2W - PISTON KIT NON-MATIC","divisi":1,"target":{"1":290.06,"2":290.9856,"3":292.6895,"4":268.6577,"5":281.9523,"6":288.1634,"7":285.5006,"8":285.7267,"9":281.2747,"10":277.9277,"11":276.3569,"12":236.8212}},{"l4":"N06","nama":"ASPIRA 2W - CYLINDER BLOCK KIT NON-MATIC","divisi":1,"target":{"1":88.8136,"2":89.097,"3":89.6187,"4":82.2604,"5":86.3311,"6":88.2329,"7":87.4176,"8":87.4868,"9":86.1236,"10":85.0988,"11":84.6179,"12":72.5124}},{"l4":"N07","nama":"ASPIRA 2W - BRAKE SHOE NON-MATIC","divisi":1,"target":{"1":2873.3551,"2":2882.5244,"3":2899.4027,"4":2661.3426,"5":2793.0401,"6":2854.5676,"7":2828.1896,"8":2830.4292,"9":2786.3277,"10":2753.1716,"11":2737.6115,"12":2345.968}},{"l4":"N08","nama":"ASPIRA 2W - PAD SET NON-MATIC","divisi":1,"target":{"1":381.9814,"2":383.2004,"3":385.4441,"4":353.7966,"5":371.3044,"6":379.4838,"7":375.9771,"8":376.2749,"9":370.412,"10":366.0043,"11":363.9358,"12":311.871}},{"l4":"N09","nama":"ASPIRA 2W - ELECTRICAL PARTS NON-MATIC","divisi":1,"target":{"1":388.6113,"2":389.8515,"3":392.1342,"4":359.9374,"5":377.749,"6":386.0704,"7":382.5029,"8":382.8058,"9":376.8412,"10":372.3569,"11":370.2525,"12":317.2841}},{"l4":"N10","nama":"ASPIRA 2W - CDI & ECU NON-MATIC","divisi":1,"target":{"1":15.9878,"2":16.0389,"3":16.1328,"4":14.8082,"5":15.5409,"6":15.8833,"7":15.7365,"8":15.749,"9":15.5036,"10":15.3191,"11":15.2325,"12":13.0534}},{"l4":"N11","nama":"ASPIRA 2W - CUSHION NON-MATIC","divisi":1,"target":{"1":79.7665,"2":80.021,"3":80.4896,"4":73.8809,"5":77.5369,"6":79.2449,"7":78.5127,"8":78.5748,"9":77.3506,"10":76.4301,"11":75.9982,"12":65.1258}},{"l4":"N12","nama":"ASPIRA 2W - VALVE NON-MATIC","divisi":1,"target":{"1":140.8518,"2":141.3012,"3":142.1286,"4":130.4589,"5":136.9147,"6":139.9308,"7":138.6377,"8":138.7475,"9":136.5857,"10":134.9604,"11":134.1976,"12":114.9993}},{"l4":"N13","nama":"ASPIRA 2W - ENGINE PARTS NON-MATIC","divisi":1,"target":{"1":1261.0013,"2":1265.0254,"3":1272.4326,"4":1167.9575,"5":1225.7542,"6":1252.7562,"7":1241.18,"8":1242.1628,"9":1222.8085,"10":1208.2576,"11":1201.4289,"12":1029.5521}},{"l4":"N14","nama":"ASPIRA 2W - GASKET SET NON-MATIC","divisi":1,"target":{"1":62.6391,"2":62.839,"3":63.207,"4":58.0173,"5":60.8883,"6":62.2296,"7":61.6545,"8":61.7034,"9":60.742,"10":60.0191,"11":59.6799,"12":51.1421}},{"l4":"N15","nama":"ASPIRA 2W - ELEMENT AIR CLEANER N-MATIC","divisi":1,"target":{"1":60.5673,"2":60.7606,"3":61.1163,"4":56.0983,"5":58.8743,"6":60.1713,"7":59.6152,"8":59.6625,"9":58.7328,"10":58.0339,"11":57.706,"12":49.4505}},{"l4":"N16","nama":"ASPIRA 2W - CONN ROD KIT NON-MATIC","divisi":1,"target":{"1":74.3106,"2":74.5477,"3":74.9843,"4":68.8276,"5":72.2335,"6":73.8247,"7":73.1425,"8":73.2005,"9":72.0599,"10":71.2024,"11":70.8,"12":60.6713}},{"l4":"N17","nama":"ASPIRA 2W - DAMPER SET NON-MATIC","divisi":1,"target":{"1":578.8078,"2":580.6549,"3":584.0549,"4":536.1001,"5":562.6292,"6":575.0233,"7":569.7097,"8":570.1608,"9":561.2771,"10":554.5981,"11":551.4637,"12":472.5711}},{"l4":"N18","nama":"ASPIRA 2W - FRAME PARTS NON-MATIC","divisi":1,"target":{"1":970.2162,"2":973.3123,"3":979.0114,"4":898.6281,"5":943.097,"6":963.8724,"7":954.9656,"8":955.7218,"9":940.8305,"10":929.6351,"11":924.381,"12":792.1388}},{"l4":"N19","nama":"ASPIRA 2W - CABLE NON-MATIC","divisi":1,"target":{"1":66.99,"2":67.2038,"3":67.5973,"4":62.0471,"5":65.1176,"6":66.552,"7":65.937,"8":65.9893,"9":64.9611,"10":64.1881,"11":63.8253,"12":54.6944}},{"l4":"N20","nama":"ASPIRA 2W - RIM WHEEL SPOKE SET N-MATIC","divisi":1,"target":{"1":1211.3804,"2":1215.246,"3":1222.3618,"4":1121.9978,"5":1177.5203,"6":1203.4597,"7":1192.339,"8":1193.2832,"9":1174.6904,"10":1160.7121,"11":1154.1521,"12":989.0387}},{"l4":"N21","nama":"ASPIRA 2W - CAM CHAIN KIT NON-MATIC","divisi":1,"target":{"1":2121.1674,"2":2127.9363,"3":2140.3962,"4":1964.6556,"5":2061.8772,"6":2107.298,"7":2087.8253,"8":2089.4786,"9":2056.922,"10":2032.4455,"11":2020.9588,"12":1731.8398}},{"l4":"N22","nama":"ASPIRA 2W - DISK BRAKE NON-MATIC","divisi":1,"target":{"1":10.1866,"2":10.2191,"3":10.279,"4":9.435,"5":9.9019,"6":10.12,"7":10.0265,"8":10.0344,"9":9.8781,"10":9.7606,"11":9.7054,"12":8.3169}},{"l4":"N23","nama":"ASPIRA 2W - CYLINDER SET MASTER NONMATIC","divisi":1,"target":{"1":145.6516,"2":146.1164,"3":146.9719,"4":134.9046,"5":141.5804,"6":144.6992,"7":143.3621,"8":143.4756,"9":141.2401,"10":139.5594,"11":138.7707,"12":118.9181}},{"l4":"N24","nama":"GASKET SATUAN NON-MATIC","divisi":1,"target":{"1":4.42,"2":4.4341,"3":4.46,"4":4.0938,"5":4.2964,"6":4.3911,"7":4.3505,"8":4.3539,"9":4.2861,"10":4.2351,"11":4.2112,"12":3.6087}},{"l4":"PO1","nama":"ASPIRA EXPOSIO 2W - BULB","divisi":1,"target":{"1":12.9208,"2":12.962,"3":13.0379,"4":11.9674,"5":12.5596,"6":12.8363,"7":12.7177,"8":12.7278,"9":12.5295,"10":12.3804,"11":12.3104,"12":10.5493}},{"l4":"PO3","nama":"ASPIRA EXPOSIO 2W - SPOKE SET","divisi":1,"target":{"1":16.1418,"2":16.1934,"3":16.2882,"4":14.9508,"5":15.6906,"6":16.0363,"7":15.8881,"8":15.9007,"9":15.6529,"10":15.4667,"11":15.3793,"12":13.1791}},{"l4":"M01","nama":"ASPIRA 2W - V-BELT (KIT & ONLY)","divisi":1,"target":{"1":878.2257,"2":881.0283,"3":886.187,"4":813.4252,"5":853.6779,"6":872.4834,"7":864.4211,"8":865.1056,"9":851.6263,"10":841.4923,"11":836.7364,"12":717.0327}},{"l4":"M02","nama":"ASPIRA 2W - CLUTCH SYSTEM PARTS MATIC","divisi":1,"target":{"1":257.4283,"2":258.2497,"3":259.7619,"4":238.4337,"5":250.2327,"6":255.745,"7":253.3818,"8":253.5825,"9":249.6313,"10":246.6608,"11":245.2668,"12":210.1788}},{"l4":"M03","nama":"ASPIRA 2W - MOVEABLE DRIVE FACE SET","divisi":1,"target":{"1":106.6661,"2":107.0065,"3":107.6331,"4":98.7957,"5":103.6846,"6":105.9687,"7":104.9895,"8":105.0726,"9":103.4354,"10":102.2046,"11":101.627,"12":87.0882}},{"l4":"M04","nama":"ASPIRA 2W - PULLEY (ASSY & ONLY)","divisi":1,"target":{"1":273.865,"2":274.7389,"3":276.3476,"4":253.6577,"5":266.21,"6":272.0743,"7":269.5602,"8":269.7736,"9":265.5702,"10":262.4101,"11":260.927,"12":223.5987}},{"l4":"M05","nama":"ASPIRA 2W - PISTON KIT MATIC","divisi":1,"target":{"1":400.3864,"2":401.6641,"3":404.016,"4":370.8436,"5":389.1949,"6":397.7685,"7":394.0928,"8":394.4049,"9":388.2596,"10":383.6395,"11":381.4713,"12":326.8979}},{"l4":"M07","nama":"ASPIRA 2W - CYLINDER BLOCK KIT MATIC","divisi":1,"target":{"1":29.8347,"2":29.93,"3":30.1052,"4":27.6334,"5":29.0008,"6":29.6397,"7":29.3658,"8":29.389,"9":28.9311,"10":28.5868,"11":28.4253,"12":24.3588}},{"l4":"M08","nama":"ASPIRA 2W - BRAKE SHOE MATIC","divisi":1,"target":{"1":2533.467,"2":2541.5516,"3":2556.4334,"4":2346.5333,"5":2462.6523,"6":2516.9018,"7":2493.644,"8":2495.6187,"9":2456.734,"10":2427.4999,"11":2413.7804,"12":2068.4643}},{"l4":"M09","nama":"ASPIRA 2W - PAD SET MATIC","divisi":1,"target":{"1":1488.1459,"2":1492.8948,"3":1501.6363,"4":1378.3421,"5":1446.5498,"6":1478.4156,"7":1464.7542,"8":1465.9141,"9":1443.0734,"10":1425.9014,"11":1417.8427,"12":1215.0057}},{"l4":"M10","nama":"ASPIRA 2W - ELECTRICAL PARTS MATIC","divisi":1,"target":{"1":308.7412,"2":309.7265,"3":311.5401,"4":285.9606,"5":300.1114,"6":306.7225,"7":303.8882,"8":304.1289,"9":299.3902,"10":295.8276,"11":294.1556,"12":252.0736}},{"l4":"M11","nama":"ASPIRA 2W - CDI & ECU MATIC","divisi":1,"target":{"1":11.0154,"2":11.0505,"3":11.1152,"4":10.2026,"5":10.7075,"6":10.9433,"7":10.8422,"8":10.8508,"9":10.6817,"10":10.5546,"11":10.495,"12":8.9936}},{"l4":"M12","nama":"ASPIRA 2W - CUSHION MATIC","divisi":1,"target":{"1":187.0542,"2":187.6511,"3":188.7499,"4":173.2523,"5":181.8257,"6":185.8311,"7":184.1139,"8":184.2597,"9":181.3887,"10":179.2303,"11":178.2173,"12":152.7215}},{"l4":"M13","nama":"ASPIRA 2W - VALVE MATIC","divisi":1,"target":{"1":44.2342,"2":44.3753,"3":44.6351,"4":40.9703,"5":42.9977,"6":43.9449,"7":43.5388,"8":43.5733,"9":42.8944,"10":42.384,"11":42.1444,"12":36.1152}},{"l4":"M14","nama":"ASPIRA 2W - ENGINE PARTS MATIC","divisi":1,"target":{"1":195.2035,"2":195.8264,"3":196.973,"4":180.8003,"5":189.7472,"6":193.9271,"7":192.1351,"8":192.2873,"9":189.2912,"10":187.0387,"11":185.9816,"12":159.375}},{"l4":"M15","nama":"ASPIRA 2W - GASKET SET MATIC","divisi":1,"target":{"1":92.9919,"2":93.2886,"3":93.8348,"4":86.1304,"5":90.3926,"6":92.3838,"7":91.5301,"8":91.6026,"9":90.1753,"10":89.1023,"11":88.5987,"12":75.9238}},{"l4":"M16","nama":"ASPIRA 2W - ELEMENT AIR CLEANER MATIC","divisi":1,"target":{"1":509.5387,"2":511.1647,"3":514.1578,"4":471.9421,"5":495.2963,"6":506.2071,"7":501.5294,"8":501.9266,"9":494.106,"10":488.2263,"11":485.467,"12":416.016}},{"l4":"M17","nama":"ASPIRA 2W - CONN ROD KIT MATIC","divisi":1,"target":{"1":49.1721,"2":49.329,"3":49.6178,"4":45.5439,"5":47.7976,"6":48.8506,"7":48.3992,"8":48.4375,"9":47.6828,"10":47.1154,"11":46.8491,"12":40.1468}},{"l4":"M18","nama":"ASPIRA 2W - FRAME PARTS MATIC","divisi":1,"target":{"1":661.9238,"2":664.0361,"3":667.9243,"4":613.0833,"5":643.422,"6":657.5958,"7":651.5192,"8":652.0351,"9":641.8757,"10":634.2376,"11":630.6531,"12":540.4317}},{"l4":"M19","nama":"ASPIRA 2W - CABLE MATIC","divisi":1,"target":{"1":172.931,"2":173.4829,"3":174.4987,"4":160.1712,"5":168.0973,"6":171.8003,"7":170.2128,"8":170.3475,"9":167.6933,"10":165.6978,"11":164.7614,"12":141.1906}},{"l4":"M22","nama":"ASPIRA 2W - DISK BRAKE MATIC","divisi":1,"target":{"1":13.4325,"2":13.4754,"3":13.5543,"4":12.4414,"5":13.0571,"6":13.3447,"7":13.2214,"8":13.2319,"9":13.0257,"10":12.8707,"11":12.798,"12":10.9671}},{"l4":"M23","nama":"ASPIRA 2W - CYLINDER SET MASTER MATIC","divisi":1,"target":{"1":154.5951,"2":155.0884,"3":155.9965,"4":143.1882,"5":150.2739,"6":153.5842,"7":152.165,"8":152.2855,"9":149.9127,"10":148.1288,"11":147.2917,"12":126.2201}},{"l4":"M24","nama":"GASKET SATUAN MATIC","divisi":1,"target":{"1":8.2874,"2":8.3139,"3":8.3626,"4":7.6759,"5":8.0558,"6":8.2332,"7":8.1572,"8":8.1636,"9":8.0364,"10":7.9408,"11":7.8959,"12":6.7663}},{"l4":"FG1","nama":"FP - CAM CHAIN & SILENT CHAIN","divisi":2,"target":{"1":436.5568,"2":437.9499,"3":440.5143,"4":404.3452,"5":424.3543,"6":433.7024,"7":429.6947,"8":430.0349,"9":423.3345,"10":418.297,"11":415.9329,"12":356.4294}},{"l4":"FG2","nama":"FP - BRAKE MASTER CYLINDER","divisi":2,"target":{"1":1661.7335,"2":1667.0363,"3":1676.7975,"4":1539.1213,"5":1615.2852,"6":1650.8681,"7":1635.6131,"8":1636.9083,"9":1611.4033,"10":1592.2283,"11":1583.2295,"12":1356.7322}},{"l4":"FG3","nama":"FP - BULB","divisi":2,"target":{"1":239.0871,"2":239.85,"3":241.2545,"4":221.4459,"5":232.4042,"6":237.5238,"7":235.3289,"8":235.5153,"9":231.8457,"10":229.0868,"11":227.7921,"12":195.2041}},{"l4":"FG4","nama":"FP - SPARK PLUG","divisi":2,"target":{"1":388.1337,"2":389.3723,"3":391.6522,"4":359.495,"5":377.2847,"6":385.5958,"7":382.0327,"8":382.3352,"9":376.378,"10":371.8992,"11":369.7974,"12":316.8941}},{"l4":"FG5","nama":"FP - BACK MIRROR","divisi":2,"target":{"1":19.7027,"2":19.7656,"3":19.8813,"4":18.249,"5":19.152,"6":19.5739,"7":19.393,"8":19.4084,"9":19.106,"10":18.8786,"11":18.7719,"12":16.0864}},{"l4":"FG6","nama":"FP - BEARING","divisi":2,"target":{"1":3580.5893,"2":3592.0155,"3":3613.0482,"4":3316.3931,"5":3480.5059,"6":3557.1775,"7":3524.3069,"8":3527.0978,"9":3472.1414,"10":3430.8244,"11":3411.4344,"12":2923.3936}},{"l4":"FG7","nama":"FP - MAINTENANCE PARTS CARBURATOR","divisi":2,"target":{"1":362.3738,"2":363.5302,"3":365.6588,"4":335.6358,"5":352.2448,"6":360.0044,"7":356.6777,"8":356.9602,"9":351.3983,"10":347.2168,"11":345.2545,"12":295.8623}},{"l4":"FG8","nama":"FP - MAINTENANCE PARTS TIRE SEALANT","divisi":2,"target":{"1":250.5888,"2":251.3885,"3":252.8605,"4":232.099,"5":243.5845,"6":248.9504,"7":246.6499,"8":246.8452,"9":242.9991,"10":240.1075,"11":238.7505,"12":204.5948}},{"l4":"FG9","nama":"FP - MAINTENANCE PARTS LEM GASKET","divisi":2,"target":{"1":94.1239,"2":94.4243,"3":94.9772,"4":87.1789,"5":91.493,"6":93.5085,"7":92.6444,"8":92.7178,"9":91.2731,"10":90.187,"11":89.6773,"12":76.8481}},{"l4":"FM1","nama":"FP - V-BELT & PAKET V-BELT","divisi":2,"target":{"1":338.1112,"2":339.1901,"3":341.1762,"4":313.1634,"5":328.6604,"6":335.9004,"7":332.7965,"8":333.06,"9":327.8706,"10":323.969,"11":322.1381,"12":276.0529}},{"l4":"FM4","nama":"FP - PISTON KIT MATIC","divisi":2,"target":{"1":11.5358,"2":11.5726,"3":11.6404,"4":10.6846,"5":11.2134,"6":11.4604,"7":11.3545,"8":11.3635,"9":11.1864,"10":11.0533,"11":10.9908,"12":9.4185}},{"l4":"FM6","nama":"FP - BRAKE SHOE MATIC","divisi":2,"target":{"1":1319.0624,"2":1323.2717,"3":1331.02,"4":1221.7345,"5":1282.1924,"6":1310.4376,"7":1298.3284,"8":1299.3565,"9":1279.111,"10":1263.8901,"11":1256.747,"12":1076.9564}},{"l4":"FM7","nama":"FP - PAD SET MATIC","divisi":2,"target":{"1":1143.7115,"2":1147.3612,"3":1154.0795,"4":1059.3219,"5":1111.7428,"6":1136.2332,"7":1125.7337,"8":1126.6252,"9":1109.071,"10":1095.8736,"11":1089.68,"12":933.7901}},{"l4":"FM8","nama":"FP - ELECTRICAL PARTS MATIC","divisi":2,"target":{"1":428.6281,"2":429.9959,"3":432.5137,"4":397.0015,"5":416.6472,"6":425.8255,"7":421.8906,"8":422.2247,"9":415.6459,"10":410.6999,"11":408.3787,"12":349.956}},{"l4":"FM9","nama":"FP - STATOR COMP MATIC","divisi":2,"target":{"1":26.5766,"2":26.6614,"3":26.8175,"4":24.6156,"5":25.8337,"6":26.4028,"7":26.1588,"8":26.1795,"9":25.7716,"10":25.465,"11":25.321,"12":21.6986}},{"l4":"FMA","nama":"FP - CUSHION MATIC","divisi":2,"target":{"1":79.0832,"2":79.3355,"3":79.8001,"4":73.248,"5":76.8727,"6":78.5661,"7":77.8401,"8":77.9017,"9":76.6879,"10":75.7754,"11":75.3471,"12":64.5679}},{"l4":"FMB","nama":"FP - KOMPONEN CUSHION MATIC","divisi":2,"target":{"1":31.783,"2":31.8844,"3":32.0711,"4":29.4379,"5":30.8946,"6":31.5752,"7":31.2834,"8":31.3082,"9":30.8204,"10":30.4536,"11":30.2815,"12":25.9494}},{"l4":"FMD","nama":"FP - CLUTCH SYSTEM MATIC","divisi":2,"target":{"1":167.15,"2":167.6834,"3":168.6652,"4":154.8167,"5":162.4779,"6":166.0571,"7":164.5226,"8":164.6529,"9":162.0874,"10":160.1586,"11":159.2534,"12":136.4706}},{"l4":"FME","nama":"FP - GASKET MATIC","divisi":2,"target":{"1":557.9039,"2":559.6842,"3":562.9614,"4":516.7386,"5":542.3095,"6":554.256,"7":549.1343,"8":549.5692,"9":541.0062,"10":534.5685,"11":531.5473,"12":455.504}},{"l4":"FMF","nama":"FP - ENGINE PARTS MATIC","divisi":2,"target":{"1":75.34,"2":75.5804,"3":76.023,"4":69.781,"5":73.2341,"6":74.8474,"7":74.1557,"8":74.2145,"9":73.0581,"10":72.1888,"11":71.7808,"12":61.5118}},{"l4":"FMG","nama":"FP - ELEMENT CLEANER MATIC","divisi":2,"target":{"1":258.3815,"2":259.206,"3":260.7238,"4":239.3166,"5":251.1593,"6":256.692,"7":254.32,"8":254.5214,"9":250.5557,"10":247.5742,"11":246.175,"12":210.9571}},{"l4":"FMK","nama":"FP - CABLE MATIC","divisi":2,"target":{"1":211.2514,"2":211.9256,"3":213.1665,"4":195.6641,"5":205.3466,"6":209.8702,"7":207.9308,"8":208.0955,"9":204.8531,"10":202.4154,"11":201.2715,"12":172.4775}},{"l4":"FMN","nama":"FP 2W - PAKET CYLINDER BLOCK MATIC","divisi":2,"target":{"1":5.1724,"2":5.1889,"3":5.2193,"4":4.7907,"5":5.0278,"6":5.1386,"7":5.0911,"8":5.0951,"9":5.0157,"10":4.956,"11":4.928,"12":4.223}},{"l4":"FMO","nama":"FP 2W - MOVEABLE DRIVE FACE SET","divisi":2,"target":{"1":119.3053,"2":119.6861,"3":120.3869,"4":110.5023,"5":115.9706,"6":118.5253,"7":117.43,"8":117.523,"9":115.6918,"10":114.3152,"11":113.6691,"12":97.4076}},{"l4":"FN1","nama":"FP - DRIVE CHAIN KIT","divisi":2,"target":{"1":83.5069,"2":83.7734,"3":84.2639,"4":77.3453,"5":81.1728,"6":82.9609,"7":82.1943,"8":82.2594,"9":80.9777,"10":80.0141,"11":79.5619,"12":68.1797}},{"l4":"FN2","nama":"FP - DRIVE CHAIN KIT HD","divisi":2,"target":{"1":19.2944,"2":19.356,"3":19.4693,"4":17.8707,"5":18.7551,"6":19.1682,"7":18.9911,"8":19.0061,"9":18.71,"10":18.4874,"11":18.3829,"12":15.753}},{"l4":"FN3","nama":"FP - KOMPONEN DRIVE CHAIN","divisi":2,"target":{"1":50.8392,"2":51.0014,"3":51.3001,"4":47.088,"5":49.4181,"6":50.5068,"7":50.0401,"8":50.0797,"9":49.2994,"10":48.7127,"11":48.4374,"12":41.508}},{"l4":"FN4","nama":"FP - PISTON KIT NON MATIC","divisi":2,"target":{"1":52.3365,"2":52.5035,"3":52.8109,"4":48.4748,"5":50.8736,"6":51.9942,"7":51.5138,"8":51.5546,"9":50.7513,"10":50.1474,"11":49.864,"12":42.7304}},{"l4":"FN6","nama":"FP - BRAKE SHOE NON MATIC","divisi":2,"target":{"1":1235.3853,"2":1239.3276,"3":1246.5844,"4":1144.2316,"5":1200.8542,"6":1227.3077,"7":1215.9666,"8":1216.9295,"9":1197.9683,"10":1183.713,"11":1177.023,"12":1008.6377}},{"l4":"FN7","nama":"FP - PAD SET NON MATIC","divisi":2,"target":{"1":624.022,"2":626.0134,"3":629.6789,"4":577.9781,"5":606.5796,"6":619.9418,"7":614.2132,"8":614.6996,"9":605.1218,"10":597.9211,"11":594.5419,"12":509.4865}},{"l4":"FN8","nama":"FP - ELECTRICAL PARTS","divisi":2,"target":{"1":1920.9997,"2":1927.1299,"3":1938.414,"4":1779.2574,"5":1867.3045,"6":1908.4391,"7":1890.804,"8":1892.3013,"9":1862.8169,"10":1840.6502,"11":1830.2474,"12":1568.4117}},{"l4":"FN9","nama":"FP - STATOR COMP","divisi":2,"target":{"1":95.6552,"2":95.9605,"3":96.5224,"4":88.5973,"5":92.9815,"6":95.0298,"7":94.1517,"8":94.2262,"9":92.7581,"10":91.6543,"11":91.1363,"12":78.0983}},{"l4":"FNA","nama":"FP - CUSHION SET NON MATIC","divisi":2,"target":{"1":111.1384,"2":111.4931,"3":112.1459,"4":102.938,"5":108.0319,"6":110.4117,"7":109.3914,"8":109.4781,"9":107.7723,"10":106.4898,"11":105.888,"12":90.7396}},{"l4":"FNB","nama":"FP - KOMPONEN CUSHION SET","divisi":2,"target":{"1":537.4185,"2":539.1335,"3":542.2903,"4":497.7647,"5":522.3967,"6":533.9045,"7":528.9709,"8":529.3898,"9":521.1413,"10":514.9399,"11":512.0296,"12":438.7785}},{"l4":"FNC","nama":"FP - DISK CLUTCH","divisi":2,"target":{"1":176.6781,"2":177.2419,"3":178.2797,"4":163.6418,"5":171.7396,"6":175.5229,"7":173.9009,"8":174.0386,"9":171.3269,"10":169.2882,"11":168.3314,"12":144.2499}},{"l4":"FND","nama":"FP - CLUTCH SYSTEM","divisi":2,"target":{"1":234.7654,"2":235.5146,"3":236.8936,"4":217.4431,"5":228.2033,"6":233.2304,"7":231.0752,"8":231.2582,"9":227.6549,"10":224.9459,"11":223.6746,"12":191.6756}},{"l4":"FNE","nama":"FP - GASKET","divisi":2,"target":{"1":841.1945,"2":843.8789,"3":848.8201,"4":779.1264,"5":817.6817,"6":835.6943,"7":827.972,"8":828.6276,"9":815.7166,"10":806.0099,"11":801.4546,"12":686.7983}},{"l4":"FNF","nama":"FP - ENGINE PARTS","divisi":2,"target":{"1":437.5777,"2":438.974,"3":441.5444,"4":405.2907,"5":425.3466,"6":434.7166,"7":430.6995,"8":431.0406,"9":424.3244,"10":419.2752,"11":416.9055,"12":357.2629}},{"l4":"FNG","nama":"FP - ELEMENT CLEANER","divisi":2,"target":{"1":66.4244,"2":66.6364,"3":67.0266,"4":61.5232,"5":64.5677,"6":65.9901,"7":65.3803,"8":65.4321,"9":64.4126,"10":63.6461,"11":63.2864,"12":54.2326}},{"l4":"FNH","nama":"FP - DAMPER SET","divisi":2,"target":{"1":834.4908,"2":837.1538,"3":842.0557,"4":772.9173,"5":811.1654,"6":829.0345,"7":821.3737,"8":822.0241,"9":809.216,"10":799.5866,"11":795.0676,"12":681.325}},{"l4":"FNI","nama":"FP - FRAME PARTS","divisi":2,"target":{"1":83.9833,"2":84.2513,"3":84.7447,"4":77.7866,"5":81.6359,"6":83.4342,"7":82.6632,"8":82.7287,"9":81.4397,"10":80.4706,"11":80.0158,"12":68.5687}},{"l4":"FNK","nama":"FP - CABLE","divisi":2,"target":{"1":132.1002,"2":132.5218,"3":133.2977,"4":122.3531,"5":128.4078,"6":131.2365,"7":130.0238,"8":130.1267,"9":128.0992,"10":126.5749,"11":125.8595,"12":107.854}},{"l4":"FNL","nama":"FP - MUFFLER","divisi":2,"target":{"1":12.7608,"2":12.8016,"3":12.8765,"4":11.8193,"5":12.4042,"6":12.6774,"7":12.5603,"8":12.5702,"9":12.3743,"10":12.2271,"11":12.158,"12":10.4187}},{"l4":"FNM","nama":"FP - RIM WHEEL & SPOKE","divisi":2,"target":{"1":580.9755,"2":582.8294,"3":586.2421,"4":538.1078,"5":564.7362,"6":577.1767,"7":571.8433,"8":572.2961,"9":563.379,"10":556.6751,"11":553.5289,"12":474.3409}},{"l4":"FNN","nama":"FP 2W - PAKET CYLINDER BLOCK NON-MATIC","divisi":2,"target":{"1":8.6093,"2":8.6368,"3":8.6874,"4":7.9741,"5":8.3687,"6":8.553,"7":8.474,"8":8.4807,"9":8.3486,"10":8.2492,"11":8.2026,"12":7.0291}}],"3":[{"l4":"L01","nama":"ASPIRA 2W - MAINTENANCE PARTS","divisi":1,"target":{"1":1187.5998,"2":1191.3896,"3":1198.3657,"4":1099.9719,"5":1154.4044,"6":1179.8346,"7":1168.9322,"8":1169.8579,"9":1151.6301,"10":1137.9262,"11":1131.495,"12":969.623}},{"l4":"L02","nama":"ASPIRA 2W - CAM CHAIN & SILENT CHAIN","divisi":1,"target":{"1":87.9385,"2":88.2192,"3":88.7357,"4":81.4499,"5":85.4805,"6":87.3636,"7":86.5563,"8":86.6248,"9":85.2751,"10":84.2603,"11":83.7841,"12":71.7979}},{"l4":"L03","nama":"ASPIRA 2W - BULB","divisi":1,"target":{"1":686.1944,"2":688.3842,"3":692.4149,"4":635.5631,"5":667.0142,"6":681.7077,"7":675.4083,"8":675.9432,"9":665.4112,"10":657.493,"11":653.7771,"12":560.2476}},{"l4":"L04","nama":"ASPIRA 2W - SPARK PLUG","divisi":1,"target":{"1":791.8495,"2":794.3764,"3":799.0278,"4":733.4224,"5":769.716,"6":786.672,"7":779.4026,"8":780.0198,"9":767.8662,"10":758.7289,"11":754.4408,"12":646.5103}},{"l4":"L05","nama":"ASPIRA 2W - BACK MIRROR","divisi":1,"target":{"1":133.5318,"2":133.9579,"3":134.7423,"4":123.6791,"5":129.7994,"6":132.6587,"7":131.4329,"8":131.537,"9":129.4875,"10":127.9466,"11":127.2235,"12":109.0229}},{"l4":"L06","nama":"ASPIRA 2W - BEARING","divisi":1,"target":{"1":1843.7566,"2":1849.6403,"3":1860.4707,"4":1707.7138,"5":1792.2206,"6":1831.7011,"7":1814.7751,"8":1816.2122,"9":1787.9134,"10":1766.638,"11":1756.6535,"12":1505.3461}},{"l4":"N01","nama":"ASPIRA 2W - DRIVE CHAIN (KIT & ONLY)","divisi":1,"target":{"1":161.4623,"2":161.9775,"3":162.9259,"4":149.5486,"5":156.9491,"6":160.4065,"7":158.9243,"8":159.0501,"9":156.5719,"10":154.7088,"11":153.8344,"12":131.8268}},{"l4":"N02","nama":"ASPIRA 2W - DISK CLUTCH NON-MATIC","divisi":1,"target":{"1":130.9817,"2":131.3997,"3":132.1691,"4":121.3171,"5":127.3206,"6":130.1253,"7":128.9229,"8":129.0249,"9":127.0146,"10":125.5032,"11":124.7939,"12":106.9408}},{"l4":"N03","nama":"ASPIRA 2W - CLUTCH SYSTEM PARTS N-MATIC","divisi":1,"target":{"1":21.1928,"2":21.2604,"3":21.3849,"4":19.629,"5":20.6004,"6":21.0542,"7":20.8596,"8":20.8762,"9":20.5509,"10":20.3063,"11":20.1916,"12":17.303}},{"l4":"N04","nama":"ASPIRA 2W - PISTON KIT NON-MATIC","divisi":1,"target":{"1":112.7417,"2":113.1015,"3":113.7638,"4":104.423,"5":109.5904,"6":112.0046,"7":110.9696,"8":111.0574,"9":109.327,"10":108.0261,"11":107.4156,"12":92.0487}},{"l4":"N06","nama":"ASPIRA 2W - CYLINDER BLOCK KIT NON-MATIC","divisi":1,"target":{"1":34.5204,"2":34.6306,"3":34.8334,"4":31.9733,"5":33.5555,"6":34.2947,"7":33.9778,"8":34.0047,"9":33.4749,"10":33.0766,"11":32.8896,"12":28.1844}},{"l4":"N07","nama":"ASPIRA 2W - BRAKE SHOE NON-MATIC","divisi":1,"target":{"1":1116.8275,"2":1120.3915,"3":1126.9518,"4":1034.4216,"5":1085.6104,"6":1109.5251,"7":1099.2724,"8":1100.1429,"9":1083.0014,"10":1070.1141,"11":1064.0662,"12":911.8405}},{"l4":"N08","nama":"ASPIRA 2W - PAD SET NON-MATIC","divisi":1,"target":{"1":148.4701,"2":148.9439,"3":149.816,"4":137.5151,"5":144.3201,"6":147.4993,"7":146.1363,"8":146.2521,"9":143.9733,"10":142.2601,"11":141.4561,"12":121.2193}},{"l4":"N09","nama":"ASPIRA 2W - ELECTRICAL PARTS NON-MATIC","divisi":1,"target":{"1":151.0471,"2":151.5291,"3":152.4163,"4":139.902,"5":146.825,"6":150.0594,"7":148.6728,"8":148.7905,"9":146.4722,"10":144.7292,"11":143.9113,"12":123.3233}},{"l4":"N10","nama":"ASPIRA 2W - CDI & ECU NON-MATIC","divisi":1,"target":{"1":6.2142,"2":6.234,"3":6.2705,"4":5.7557,"5":6.0405,"6":6.1736,"7":6.1165,"8":6.1214,"9":6.026,"10":5.9543,"11":5.9206,"12":5.0736}},{"l4":"N11","nama":"ASPIRA 2W - CUSHION NON-MATIC","divisi":1,"target":{"1":31.004,"2":31.1029,"3":31.285,"4":28.7163,"5":30.1374,"6":30.8013,"7":30.5166,"8":30.5408,"9":30.0649,"10":29.7072,"11":29.5393,"12":25.3134}},{"l4":"N12","nama":"ASPIRA 2W - VALVE NON-MATIC","divisi":1,"target":{"1":54.7468,"2":54.9215,"3":55.2431,"4":50.7073,"5":53.2166,"6":54.3889,"7":53.8863,"8":53.929,"9":53.0887,"10":52.457,"11":52.1605,"12":44.6984}},{"l4":"N13","nama":"ASPIRA 2W - ENGINE PARTS NON-MATIC","divisi":1,"target":{"1":490.1312,"2":491.6953,"3":494.5744,"4":453.9665,"5":476.4312,"6":486.9265,"7":482.427,"8":482.809,"9":475.2862,"10":469.6305,"11":466.9763,"12":400.1706}},{"l4":"N14","nama":"ASPIRA 2W - GASKET SET NON-MATIC","divisi":1,"target":{"1":24.3468,"2":24.4245,"3":24.5676,"4":22.5504,"5":23.6663,"6":24.1877,"7":23.9641,"8":23.9831,"9":23.6094,"10":23.3285,"11":23.1966,"12":19.8781}},{"l4":"N15","nama":"ASPIRA 2W - ELEMENT AIR CLEANER N-MATIC","divisi":1,"target":{"1":23.5415,"2":23.6167,"3":23.755,"4":21.8045,"5":22.8835,"6":23.3876,"7":23.1715,"8":23.1899,"9":22.8285,"10":22.5569,"11":22.4294,"12":19.2206}},{"l4":"N16","nama":"ASPIRA 2W - CONN ROD KIT NON-MATIC","divisi":1,"target":{"1":28.8834,"2":28.9755,"3":29.1452,"4":26.7522,"5":28.076,"6":28.6945,"7":28.4293,"8":28.4519,"9":28.0085,"10":27.6753,"11":27.5188,"12":23.582}},{"l4":"N17","nama":"ASPIRA 2W - DAMPER SET NON-MATIC","divisi":1,"target":{"1":224.9734,"2":225.6913,"3":227.0129,"4":208.3736,"5":218.685,"6":223.5024,"7":221.4371,"8":221.6125,"9":218.1595,"10":215.5635,"11":214.3452,"12":183.6809}},{"l4":"N18","nama":"ASPIRA 2W - FRAME PARTS NON-MATIC","divisi":1,"target":{"1":377.1076,"2":378.311,"3":380.5262,"4":349.2825,"5":366.5668,"6":374.6419,"7":371.18,"8":371.4739,"9":365.6859,"10":361.3344,"11":359.2922,"12":307.8918}},{"l4":"N19","nama":"ASPIRA 2W - CABLE NON-MATIC","divisi":1,"target":{"1":26.038,"2":26.1211,"3":26.274,"4":24.1167,"5":25.3102,"6":25.8677,"7":25.6287,"8":25.649,"9":25.2493,"10":24.9489,"11":24.8079,"12":21.2589}},{"l4":"N20","nama":"ASPIRA 2W - RIM WHEEL SPOKE SET N-MATIC","divisi":1,"target":{"1":470.8443,"2":472.3469,"3":475.1126,"4":436.1027,"5":457.6834,"6":467.7657,"7":463.4432,"8":463.8102,"9":456.5835,"10":451.1504,"11":448.6006,"12":384.4237}},{"l4":"N21","nama":"ASPIRA 2W - CAM CHAIN KIT NON-MATIC","divisi":1,"target":{"1":824.4641,"2":827.0951,"3":831.9381,"4":763.6304,"5":801.419,"6":819.0733,"7":811.5046,"8":812.1472,"9":799.4929,"10":789.9793,"11":785.5146,"12":673.1387}},{"l4":"N22","nama":"ASPIRA 2W - DISK BRAKE NON-MATIC","divisi":1,"target":{"1":3.9594,"2":3.972,"3":3.9953,"4":3.6672,"5":3.8487,"6":3.9335,"7":3.8971,"8":3.9002,"9":3.8395,"10":3.7938,"11":3.7723,"12":3.2327}},{"l4":"N23","nama":"ASPIRA 2W - CYLINDER SET MASTER NONMATIC","divisi":1,"target":{"1":56.6125,"2":56.7931,"3":57.1257,"4":52.4353,"5":55.03,"6":56.2423,"7":55.7226,"8":55.7667,"9":54.8978,"10":54.2445,"11":53.938,"12":46.2216}},{"l4":"N24","nama":"GASKET SATUAN NON-MATIC","divisi":1,"target":{"1":1.718,"2":1.7235,"3":1.7335,"4":1.5912,"5":1.6699,"6":1.7067,"7":1.691,"8":1.6923,"9":1.6659,"10":1.6461,"11":1.6368,"12":1.4026}},{"l4":"PO1","nama":"ASPIRA EXPOSIO 2W - BULB","divisi":1,"target":{"1":5.0221,"2":5.0381,"3":5.0676,"4":4.6515,"5":4.8817,"6":4.9893,"7":4.9432,"8":4.9471,"9":4.87,"10":4.812,"11":4.7849,"12":4.1003}},{"l4":"PO3","nama":"ASPIRA EXPOSIO 2W - SPOKE SET","divisi":1,"target":{"1":6.2741,"2":6.2941,"3":6.331,"4":5.8111,"5":6.0987,"6":6.2331,"7":6.1755,"8":6.1803,"9":6.084,"10":6.0117,"11":5.9777,"12":5.1225}},{"l4":"M01","nama":"ASPIRA 2W - V-BELT (KIT & ONLY)","divisi":1,"target":{"1":341.3524,"2":342.4417,"3":344.4468,"4":316.1655,"5":331.811,"6":339.1205,"7":335.9868,"8":336.2528,"9":331.0136,"10":327.0747,"11":325.2262,"12":278.6992}},{"l4":"M02","nama":"ASPIRA 2W - CLUTCH SYSTEM PARTS MATIC","divisi":1,"target":{"1":100.0583,"2":100.3776,"3":100.9653,"4":92.6754,"5":97.2615,"6":99.404,"7":98.4855,"8":98.5635,"9":97.0277,"10":95.8732,"11":95.3313,"12":81.6932}},{"l4":"M03","nama":"ASPIRA 2W - MOVEABLE DRIVE FACE SET","divisi":1,"target":{"1":41.4594,"2":41.5917,"3":41.8353,"4":38.4003,"5":40.3006,"6":41.1883,"7":40.8077,"8":40.8401,"9":40.2037,"10":39.7253,"11":39.5008,"12":33.8498}},{"l4":"M04","nama":"ASPIRA 2W - PULLEY (ASSY & ONLY)","divisi":1,"target":{"1":106.447,"2":106.7867,"3":107.4119,"4":98.5927,"5":103.4716,"6":105.751,"7":104.7738,"8":104.8567,"9":103.2229,"10":101.9946,"11":101.4182,"12":86.9093}},{"l4":"M05","nama":"ASPIRA 2W - PISTON KIT MATIC","divisi":1,"target":{"1":155.6238,"2":156.1205,"3":157.0346,"4":144.141,"5":151.2739,"6":154.6063,"7":153.1776,"8":153.2989,"9":150.9103,"10":149.1146,"11":148.2718,"12":127.06}},{"l4":"M07","nama":"ASPIRA 2W - CYLINDER BLOCK KIT MATIC","divisi":1,"target":{"1":11.5963,"2":11.6333,"3":11.7014,"4":10.7407,"5":11.2722,"6":11.5205,"7":11.414,"8":11.4231,"9":11.2451,"10":11.1113,"11":11.0485,"12":9.4679}},{"l4":"M08","nama":"ASPIRA 2W - BRAKE SHOE MATIC","divisi":1,"target":{"1":984.7184,"2":987.8608,"3":993.6451,"4":912.0603,"5":957.1939,"6":978.2798,"7":969.2399,"8":970.0074,"9":954.8935,"10":943.5307,"11":938.1981,"12":803.9792}},{"l4":"M09","nama":"ASPIRA 2W - PAD SET MATIC","divisi":1,"target":{"1":578.4187,"2":580.2645,"3":583.6622,"4":535.7397,"5":562.2509,"6":574.6367,"7":569.3267,"8":569.7775,"9":560.8997,"10":554.2253,"11":551.0929,"12":472.2534}},{"l4":"M10","nama":"ASPIRA 2W - ELECTRICAL PARTS MATIC","divisi":1,"target":{"1":120.0028,"2":120.3858,"3":121.0907,"4":111.1483,"5":116.6485,"6":119.2182,"7":118.1165,"8":118.2101,"9":116.3682,"10":114.9835,"11":114.3336,"12":97.977}},{"l4":"M11","nama":"ASPIRA 2W - CDI & ECU MATIC","divisi":1,"target":{"1":4.2815,"2":4.2952,"3":4.3203,"4":3.9656,"5":4.1618,"6":4.2535,"7":4.2142,"8":4.2175,"9":4.1518,"10":4.1024,"11":4.0792,"12":3.4957}},{"l4":"M12","nama":"ASPIRA 2W - CUSHION MATIC","divisi":1,"target":{"1":72.705,"2":72.937,"3":73.3641,"4":67.3404,"5":70.6728,"6":72.2296,"7":71.5622,"8":71.6188,"9":70.5029,"10":69.664,"11":69.2702,"12":59.3604}},{"l4":"M13","nama":"ASPIRA 2W - VALVE MATIC","divisi":1,"target":{"1":17.1931,"2":17.248,"3":17.349,"4":15.9245,"5":16.7125,"6":17.0807,"7":16.9229,"8":16.9363,"9":16.6724,"10":16.474,"11":16.3809,"12":14.0374}},{"l4":"M14","nama":"ASPIRA 2W - ENGINE PARTS MATIC","divisi":1,"target":{"1":75.8725,"2":76.1146,"3":76.5603,"4":70.2742,"5":73.7517,"6":75.3764,"7":74.6799,"8":74.739,"9":73.5745,"10":72.699,"11":72.2881,"12":61.9466}},{"l4":"M15","nama":"ASPIRA 2W - GASKET SET MATIC","divisi":1,"target":{"1":36.1445,"2":36.2598,"3":36.4721,"4":33.4775,"5":35.1342,"6":35.9081,"7":35.5763,"8":35.6045,"9":35.0497,"10":34.6326,"11":34.4369,"12":29.5104}},{"l4":"M16","nama":"ASPIRA 2W - ELEMENT AIR CLEANER MATIC","divisi":1,"target":{"1":198.0496,"2":198.6816,"3":199.845,"4":183.4364,"5":192.5138,"6":196.7547,"7":194.9365,"8":195.0909,"9":192.0511,"10":189.7658,"11":188.6933,"12":161.6988}},{"l4":"M17","nama":"ASPIRA 2W - CONN ROD KIT MATIC","divisi":1,"target":{"1":19.1124,"2":19.1734,"3":19.2857,"4":17.7022,"5":18.5782,"6":18.9874,"7":18.812,"8":18.8269,"9":18.5335,"10":18.313,"11":18.2095,"12":15.6044}},{"l4":"M18","nama":"ASPIRA 2W - FRAME PARTS MATIC","divisi":1,"target":{"1":257.2793,"2":258.1003,"3":259.6116,"4":238.2958,"5":250.0879,"6":255.5971,"7":253.2352,"8":253.4357,"9":249.4869,"10":246.5181,"11":245.1249,"12":210.0572}},{"l4":"M19","nama":"ASPIRA 2W - CABLE MATIC","divisi":1,"target":{"1":67.2155,"2":67.43,"3":67.8249,"4":62.256,"5":65.3368,"6":66.776,"7":66.159,"8":66.2114,"9":65.1797,"10":64.4041,"11":64.0401,"12":54.8785}},{"l4":"M22","nama":"ASPIRA 2W - DISK BRAKE MATIC","divisi":1,"target":{"1":5.221,"2":5.2377,"3":5.2683,"4":4.8358,"5":5.0751,"6":5.1869,"7":5.1389,"8":5.143,"9":5.0629,"10":5.0026,"11":4.9744,"12":4.2627}},{"l4":"M23","nama":"ASPIRA 2W - CYLINDER SET MASTER MATIC","divisi":1,"target":{"1":60.0887,"2":60.2804,"3":60.6334,"4":55.655,"5":58.4091,"6":59.6958,"7":59.1441,"8":59.191,"9":58.2687,"10":57.5753,"11":57.2499,"12":49.0597}},{"l4":"M24","nama":"GASKET SATUAN MATIC","divisi":1,"target":{"1":3.2212,"2":3.2315,"3":3.2504,"4":2.9835,"5":3.1312,"6":3.2001,"7":3.1706,"8":3.1731,"9":3.1236,"10":3.0865,"11":3.069,"12":2.63}},{"l4":"FG1","nama":"FP - CAM CHAIN & SILENT CHAIN","divisi":2,"target":{"1":198.1446,"2":198.7769,"3":199.9408,"4":183.5243,"5":192.6061,"6":196.849,"7":195.03,"8":195.1844,"9":192.1432,"10":189.8568,"11":188.7838,"12":161.7763}},{"l4":"FG2","nama":"FP - BRAKE MASTER CYLINDER","divisi":2,"target":{"1":754.2282,"2":756.635,"3":761.0654,"4":698.5769,"5":733.1463,"6":749.2966,"7":742.3727,"8":742.9605,"9":731.3843,"10":722.6812,"11":718.5968,"12":615.7941}},{"l4":"FG3","nama":"FP - BULB","divisi":2,"target":{"1":108.5169,"2":108.8632,"3":109.5007,"4":100.5099,"5":105.4837,"6":107.8074,"7":106.8112,"8":106.8958,"9":105.2302,"10":103.978,"11":103.3904,"12":88.5993}},{"l4":"FG4","nama":"FP - SPARK PLUG","divisi":2,"target":{"1":176.1663,"2":176.7284,"3":177.7632,"4":163.1677,"5":171.2421,"6":175.0144,"7":173.3971,"8":173.5345,"9":170.8306,"10":168.7978,"11":167.8438,"12":143.832}},{"l4":"FG5","nama":"FP - BACK MIRROR","divisi":2,"target":{"1":8.9427,"2":8.9712,"3":9.0238,"4":8.2828,"5":8.6927,"6":8.8842,"7":8.8021,"8":8.8091,"9":8.6718,"10":8.5686,"11":8.5202,"12":7.3013}},{"l4":"FG6","nama":"FP - BEARING","divisi":2,"target":{"1":1625.1592,"2":1630.3453,"3":1639.8916,"4":1505.2457,"5":1579.7333,"6":1614.533,"7":1599.6137,"8":1600.8804,"9":1575.9368,"10":1557.1838,"11":1548.3831,"12":1326.871}},{"l4":"FG7","nama":"FP - MAINTENANCE PARTS CARBURATOR","divisi":2,"target":{"1":164.4744,"2":164.9992,"3":165.9653,"4":152.3385,"5":159.877,"6":163.3989,"7":161.889,"8":162.0172,"9":159.4928,"10":157.5949,"11":156.7042,"12":134.2861}},{"l4":"FG8","nama":"FP - MAINTENANCE PARTS TIRE SEALANT","divisi":2,"target":{"1":113.7374,"2":114.1003,"3":114.7684,"4":105.3452,"5":110.5582,"6":112.9937,"7":111.9495,"8":112.0382,"9":110.2925,"10":108.9801,"11":108.3642,"12":92.8615}},{"l4":"FG9","nama":"FP - MAINTENANCE PARTS LEM GASKET","divisi":2,"target":{"1":42.721,"2":42.8573,"3":43.1083,"4":39.5688,"5":41.5269,"6":42.4417,"7":42.0495,"8":42.0828,"9":41.4271,"10":40.9341,"11":40.7028,"12":34.8798}},{"l4":"FM1","nama":"FP - V-BELT & PAKET V-BELT","divisi":2,"target":{"1":153.462,"2":153.9517,"3":154.8532,"4":142.1387,"5":149.1725,"6":152.4586,"7":151.0498,"8":151.1694,"9":148.814,"10":147.0432,"11":146.2121,"12":125.295}},{"l4":"FM4","nama":"FP - PISTON KIT MATIC","divisi":2,"target":{"1":5.2359,"2":5.2526,"3":5.2833,"4":4.8495,"5":5.0895,"6":5.2016,"7":5.1536,"8":5.1577,"9":5.0773,"10":5.0169,"11":4.9885,"12":4.2749}},{"l4":"FM6","nama":"FP - BRAKE SHOE MATIC","divisi":2,"target":{"1":598.6965,"2":600.607,"3":604.1238,"4":554.5213,"5":581.962,"6":594.7819,"7":589.2858,"8":589.7524,"9":580.5634,"10":573.6549,"11":570.4128,"12":488.8094}},{"l4":"FM7","nama":"FP - PAD SET MATIC","divisi":2,"target":{"1":519.1082,"2":520.7647,"3":523.814,"4":480.8054,"5":504.5982,"6":515.714,"7":510.9484,"8":511.3531,"9":503.3856,"10":497.3955,"11":494.5844,"12":423.829}},{"l4":"FM8","nama":"FP - ELECTRICAL PARTS MATIC","divisi":2,"target":{"1":194.5459,"2":195.1667,"3":196.3095,"4":180.1912,"5":189.108,"6":193.2738,"7":191.4878,"8":191.6395,"9":188.6535,"10":186.4086,"11":185.3551,"12":158.8381}},{"l4":"FM9","nama":"FP - STATOR COMP MATIC","divisi":2,"target":{"1":12.0626,"2":12.1011,"3":12.1719,"4":11.1725,"5":11.7254,"6":11.9837,"7":11.873,"8":11.8824,"9":11.6972,"10":11.558,"11":11.4927,"12":9.8486}},{"l4":"FMA","nama":"FP - CUSHION MATIC","divisi":2,"target":{"1":35.8943,"2":36.0088,"3":36.2197,"4":33.2458,"5":34.891,"6":35.6596,"7":35.3301,"8":35.3581,"9":34.8071,"10":34.393,"11":34.1986,"12":29.3061}},{"l4":"FMB","nama":"FP - KOMPONEN CUSHION MATIC","divisi":2,"target":{"1":14.4257,"2":14.4717,"3":14.5565,"4":13.3613,"5":14.0225,"6":14.3314,"7":14.1989,"8":14.2102,"9":13.9888,"10":13.8223,"11":13.7442,"12":11.7779}},{"l4":"FMD","nama":"FP - CLUTCH SYSTEM MATIC","divisi":2,"target":{"1":75.8661,"2":76.1082,"3":76.5538,"4":70.2683,"5":73.7455,"6":75.37,"7":74.6736,"8":74.7327,"9":73.5683,"10":72.6928,"11":72.282,"12":61.9413}},{"l4":"FME","nama":"FP - GASKET MATIC","divisi":2,"target":{"1":253.2216,"2":254.0297,"3":255.5171,"4":234.5375,"5":246.1437,"6":251.5659,"7":249.2413,"8":249.4387,"9":245.5521,"10":242.6301,"11":241.2589,"12":206.7443}},{"l4":"FMF","nama":"FP - ENGINE PARTS MATIC","divisi":2,"target":{"1":34.1953,"2":34.3045,"3":34.5053,"4":31.6722,"5":33.2395,"6":33.9718,"7":33.6578,"8":33.6845,"9":33.1596,"10":32.7651,"11":32.5799,"12":27.919}},{"l4":"FMG","nama":"FP - ELEMENT CLEANER MATIC","divisi":2,"target":{"1":117.2743,"2":117.6485,"3":118.3374,"4":108.6211,"5":113.9963,"6":116.5075,"7":115.4309,"8":115.5223,"9":113.7223,"10":112.3691,"11":111.734,"12":95.7493}},{"l4":"FMK","nama":"FP - CABLE MATIC","divisi":2,"target":{"1":95.8829,"2":96.1889,"3":96.7521,"4":88.8081,"5":93.2028,"6":95.2559,"7":94.3757,"8":94.4505,"9":92.9788,"10":91.8724,"11":91.3532,"12":78.2842}},{"l4":"FMN","nama":"FP 2W - PAKET CYLINDER BLOCK MATIC","divisi":2,"target":{"1":2.3476,"2":2.3551,"3":2.3689,"4":2.1744,"5":2.282,"6":2.3323,"7":2.3107,"8":2.3126,"9":2.2765,"10":2.2495,"11":2.2367,"12":1.9168}},{"l4":"FMO","nama":"FP 2W - MOVEABLE DRIVE FACE SET","divisi":2,"target":{"1":54.1504,"2":54.3232,"3":54.6412,"4":50.1548,"5":52.6368,"6":53.7963,"7":53.2992,"8":53.3414,"9":52.5103,"10":51.8854,"11":51.5922,"12":44.2114}},{"l4":"FN1","nama":"FP - DRIVE CHAIN KIT","divisi":2,"target":{"1":37.9022,"2":38.0231,"3":38.2457,"4":35.1055,"5":36.8427,"6":37.6543,"7":37.3064,"8":37.3359,"9":36.7542,"10":36.3168,"11":36.1116,"12":30.9454}},{"l4":"FN2","nama":"FP - DRIVE CHAIN KIT HD","divisi":2,"target":{"1":8.7573,"2":8.7853,"3":8.8367,"4":8.1112,"5":8.5126,"6":8.7001,"7":8.6197,"8":8.6265,"9":8.4921,"10":8.3911,"11":8.3436,"12":7.15}},{"l4":"FN3","nama":"FP - KOMPONEN DRIVE CHAIN","divisi":2,"target":{"1":23.0749,"2":23.1485,"3":23.2841,"4":21.3723,"5":22.4299,"6":22.924,"7":22.7122,"8":22.7302,"9":22.376,"10":22.1098,"11":21.9848,"12":18.8396}},{"l4":"FN4","nama":"FP - PISTON KIT NON MATIC","divisi":2,"target":{"1":23.7545,"2":23.8303,"3":23.9698,"4":22.0017,"5":23.0905,"6":23.5992,"7":23.3811,"8":23.3996,"9":23.035,"10":22.7609,"11":22.6323,"12":19.3945}},{"l4":"FN6","nama":"FP - BRAKE SHOE NON MATIC","divisi":2,"target":{"1":560.7171,"2":562.5065,"3":565.8002,"4":519.3442,"5":545.0442,"6":557.0509,"7":551.9034,"8":552.3404,"9":543.7343,"10":537.2641,"11":534.2276,"12":457.8009}},{"l4":"FN7","nama":"FP - PAD SET NON MATIC","divisi":2,"target":{"1":283.2314,"2":284.1352,"3":285.7989,"4":262.3329,"5":275.3146,"6":281.3794,"7":278.7793,"8":279.0001,"9":274.6529,"10":271.3847,"11":269.8509,"12":231.2459}},{"l4":"FN8","nama":"FP - ELECTRICAL PARTS","divisi":2,"target":{"1":871.904,"2":874.6864,"3":879.808,"4":807.57,"5":847.5329,"6":866.2031,"7":858.1988,"8":858.8784,"9":845.496,"10":835.435,"11":830.7134,"12":711.8713}},{"l4":"FN9","nama":"FP - STATOR COMP","divisi":2,"target":{"1":43.416,"2":43.5546,"3":43.8096,"4":40.2126,"5":42.2025,"6":43.1322,"7":42.7336,"8":42.7674,"9":42.1011,"10":41.6001,"11":41.365,"12":35.4473}},{"l4":"FNA","nama":"FP - CUSHION SET NON MATIC","divisi":2,"target":{"1":50.4435,"2":50.6045,"3":50.9008,"4":46.7215,"5":49.0336,"6":50.1137,"7":49.6506,"8":49.6899,"9":48.9157,"10":48.3336,"11":48.0605,"12":41.1849}},{"l4":"FNB","nama":"FP - KOMPONEN CUSHION SET","divisi":2,"target":{"1":243.9237,"2":244.7021,"3":246.1349,"4":225.9256,"5":237.1056,"6":242.3288,"7":240.0895,"8":240.2796,"9":236.5358,"10":233.7211,"11":232.4002,"12":199.153}},{"l4":"FNC","nama":"FP - DISK CLUTCH","divisi":2,"target":{"1":80.1907,"2":80.4466,"3":80.9177,"4":74.2738,"5":77.9492,"6":79.6664,"7":78.9302,"8":78.9927,"9":77.7619,"10":76.8366,"11":76.4023,"12":65.4722}},{"l4":"FND","nama":"FP - CLUTCH SYSTEM","divisi":2,"target":{"1":106.5554,"2":106.8954,"3":107.5214,"4":98.6931,"5":103.577,"6":105.8587,"7":104.8805,"8":104.9635,"9":103.3281,"10":102.0985,"11":101.5215,"12":86.9978}},{"l4":"FNE","nama":"FP - GASKET","divisi":2,"target":{"1":381.8017,"2":383.0201,"3":385.2628,"4":353.6302,"5":371.1297,"6":379.3052,"7":375.8002,"8":376.0978,"9":370.2378,"10":365.8321,"11":363.7645,"12":311.7243}},{"l4":"FNF","nama":"FP - ENGINE PARTS","divisi":2,"target":{"1":198.6079,"2":199.2417,"3":200.4083,"4":183.9535,"5":193.0565,"6":197.3093,"7":195.486,"8":195.6409,"9":192.5925,"10":190.3008,"11":189.2252,"12":162.1546}},{"l4":"FNG","nama":"FP - ELEMENT CLEANER","divisi":2,"target":{"1":30.1487,"2":30.2449,"3":30.422,"4":27.9242,"5":29.306,"6":29.9516,"7":29.6748,"8":29.6983,"9":29.2356,"10":28.8877,"11":28.7244,"12":24.6151}},{"l4":"FNH","nama":"FP - DAMPER SET","divisi":2,"target":{"1":378.759,"2":379.9677,"3":382.1925,"4":350.812,"5":368.1721,"6":376.2825,"7":372.8054,"8":373.1006,"9":367.2872,"10":362.9167,"11":360.8656,"12":309.2401}},{"l4":"FNI","nama":"FP - FRAME PARTS","divisi":2,"target":{"1":38.1184,"2":38.24,"3":38.4639,"4":35.3058,"5":37.0529,"6":37.8691,"7":37.5192,"8":37.5489,"9":36.9639,"10":36.524,"11":36.3176,"12":31.122}},{"l4":"FNK","nama":"FP - CABLE","divisi":2,"target":{"1":59.9577,"2":60.149,"3":60.5012,"4":55.5337,"5":58.2818,"6":59.5657,"7":59.0152,"8":59.062,"9":58.1417,"10":57.4498,"11":57.1252,"12":48.9528}},{"l4":"FNL","nama":"FP - MUFFLER","divisi":2,"target":{"1":5.7919,"2":5.8104,"3":5.8444,"4":5.3645,"5":5.63,"6":5.754,"7":5.7009,"8":5.7054,"9":5.6165,"10":5.5496,"11":5.5183,"12":4.7288}},{"l4":"FNM","nama":"FP - RIM WHEEL & SPOKE","divisi":2,"target":{"1":263.6934,"2":264.5348,"3":266.0838,"4":244.2366,"5":256.3227,"6":261.9692,"7":259.5484,"8":259.754,"9":255.7067,"10":252.6639,"11":251.2359,"12":215.294}},{"l4":"FNN","nama":"FP 2W - PAKET CYLINDER BLOCK NON-MATIC","divisi":2,"target":{"1":3.9076,"2":3.9201,"3":3.943,"4":3.6193,"5":3.7984,"6":3.882,"7":3.8462,"8":3.8492,"9":3.7892,"10":3.7442,"11":3.723,"12":3.1904}}]};
+
+/* ============================= KONSTANTA ============================= */
+const PRODUCT_CODES = ['AP2','CC0','ATI','ATU','FP2','FTU','FB0'];
+const DIV1_CODES = ['AP2','CC0','ATI','ATU'];
+const DIV2_CODES = ['FP2','FTU','FB0'];
+const PRODUCT_LABEL = {AP2:'Aspira Parts 2W', CC0:'Aspira Battery', ATI:'Aspira Tire', ATU:'Aspira Tube',
+                       FP2:'Federal Parts', FTU:'FP Tube 2W', FB0:'Federal Parts Battery'};
+const PRODUCT_MAP = {
+  'ASPIRA PARTS 2W':'AP2', 'ASPIRA TIRE':'ATI', 'ASPIRA TUBE':'ATU', 'ASPIRA BATTERY':'CC0',
+  'FEDERAL PARTS':'FP2', 'FP TUBE 2W':'FTU', 'QUANTUM - FEDERAL PARTS BATTERY':'FB0',
+  'ASPIRA EXPOSIO - 2W':'AP2'
+};
+const MATIC_PCT = {AP2:0.36, ATI:0.583, ATU:0.342, FP2:0.32};
+const AOS_PCT = 0.30;
+const KATEGORI_LABEL = {padang:'Act Padang', motoris:'Act Motoris', luarkota:'Act Luar Kota'};
+const MONTH_NAMES = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
+
+/* ============================= STATE ============================= */
+let state = {
+  tokoMaster: {},      // kode -> {nama, wilayah}
+  targets: {},         // bulan -> wilayah -> divisi -> {code: value}
+  actuals: {},         // bulan -> wilayah -> divisi -> kategori -> {code: value}
+  maticActual: {},     // bulan -> wilayah -> divisi -> {code: value}
+  aosActual: {},       // bulan -> wilayah -> divisi -> value
+  salesCounter: {},    // bulan -> {code: value}
+  salesNames: {},      // bulan -> wilayah -> divisi -> nama
+  targetPct: {},       // bulan -> wilayah -> divisi -> persen capaian yang ingin dikejar (default 100)
+  qtyTargets: null,     // wilayah -> [{l4,nama,divisi,target:{'1':v,...}}]  (default dari QTY_TARGET_SEED, bisa diedit)
+  qtyActual: {},        // bulan -> wilayah -> divisi -> {l4: qty}
+  oaSet: {},             // bulan -> wilayah -> divisi -> [kodeToko,...] unik
+  skuSet: {},            // bulan -> wilayah -> divisi -> [idProduk,...] unik
+  kpiManual: {},          // bulan -> wilayah -> divisi -> {targetCollection, actCollection, targetOA, targetSKU}
+  pendingUnknown: {}   // kode -> {namaHint, totalDpp, rows:[...]}
+};
+
+/* ============================= UTIL STORAGE (localStorage, tersimpan di browser laptop ini) ============================= */
+const LS_PREFIX = 'pencapaian_';
+function lsGet(key){
+  try{
+    const raw = localStorage.getItem(LS_PREFIX + key);
+    return raw ? JSON.parse(raw) : null;
+  }catch(e){ return null; }
+}
+function lsSet(key, obj){
+  try{
+    localStorage.setItem(LS_PREFIX + key, JSON.stringify(obj));
+    return true;
+  }catch(e){ console.error('Gagal menyimpan (localStorage penuh?)', e); return false; }
+}
+async function loadState(){
+  const toko = lsGet('toko-master'); if(toko) state.tokoMaster = toko;
+  const tgt = lsGet('targets'); if(tgt) state.targets = tgt;
+  const sn = lsGet('sales-names'); if(sn) state.salesNames = sn;
+  const tp = lsGet('target-pct'); if(tp) state.targetPct = tp;
+  const qt = lsGet('qty-targets'); state.qtyTargets = qt || (window.QTY_TARGET_SEED || {});
+  const qa = lsGet('qty-actual-bundle');
+  if(qa){
+    state.qtyActual = qa.qtyActual || {};
+    state.oaSet = qa.oaSet || {};
+    state.skuSet = qa.skuSet || {};
+  }
+  const km = lsGet('kpi-manual'); if(km) state.kpiManual = km;
+  const ab = lsGet('actuals-bundle');
+  if(ab){
+    state.actuals = ab.actuals || {};
+    state.maticActual = ab.maticActual || {};
+    state.aosActual = ab.aosActual || {};
+    state.salesCounter = ab.salesCounter || {};
+  }
+}
+async function saveTokoMaster(){ lsSet('toko-master', state.tokoMaster); }
+async function saveTargets(){ lsSet('targets', state.targets); }
+async function saveSalesNames(){ lsSet('sales-names', state.salesNames); }
+async function saveTargetPct(){ lsSet('target-pct', state.targetPct); }
+async function saveQtyTargets(){ lsSet('qty-targets', state.qtyTargets); }
+async function saveQtyActualBundle(){ lsSet('qty-actual-bundle', {qtyActual: state.qtyActual, oaSet: state.oaSet, skuSet: state.skuSet}); }
+async function saveKpiManual(){ lsSet('kpi-manual', state.kpiManual); }
+async function saveActualsBundle(){
+  lsSet('actuals-bundle', {
+    actuals: state.actuals, maticActual: state.maticActual, aosActual: state.aosActual, salesCounter: state.salesCounter
+  });
+}
+function backupAllData(light){
+  const bundle = light ? {
+    tokoMaster: state.tokoMaster, targets: state.targets, salesNames: state.salesNames, targetPct: state.targetPct,
+    qtyTargets: state.qtyTargets, kpiManual: state.kpiManual,
+    exportedAt: new Date().toISOString(), light: true
+  } : {
+    tokoMaster: state.tokoMaster, targets: state.targets, salesNames: state.salesNames, targetPct: state.targetPct,
+    actuals: state.actuals, maticActual: state.maticActual, aosActual: state.aosActual, salesCounter: state.salesCounter,
+    qtyTargets: state.qtyTargets, qtyActual: state.qtyActual, oaSet: state.oaSet, skuSet: state.skuSet, kpiManual: state.kpiManual,
+    exportedAt: new Date().toISOString()
+  };
+  const blob = new Blob([JSON.stringify(bundle)], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = `backup-pencapaian${light?'-ringan-toko-target':''}-${new Date().toISOString().slice(0,10)}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+function deepMerge(target, source){
+  for(const k in source){
+    const sv = source[k];
+    if(sv && typeof sv === 'object' && !Array.isArray(sv)){
+      if(!target[k] || typeof target[k] !== 'object') target[k] = {};
+      deepMerge(target[k], sv);
+    } else {
+      target[k] = sv;
+    }
+  }
+  return target;
+}
+async function restoreAllData(file, mode){
+  const text = await file.text();
+  const bundle = JSON.parse(text);
+  const keys = ['tokoMaster','targets','salesNames','targetPct','actuals','maticActual','aosActual','salesCounter','qtyTargets','qtyActual','oaSet','skuSet','kpiManual'];
+  if(mode === 'replace'){
+    keys.forEach(k=>{ if(bundle[k]!==undefined) state[k] = bundle[k]; });
+  } else {
+    keys.forEach(k=>{ if(bundle[k]!==undefined){ if(!state[k]) state[k]={}; deepMerge(state[k], bundle[k]); } });
+  }
+  await saveTokoMaster(); await saveTargets(); await saveSalesNames(); await saveTargetPct(); await saveActualsBundle();
+  await saveQtyTargets(); await saveQtyActualBundle(); await saveKpiManual();
+}
+
+/* ============================= HELPERS ============================= */
+function fmtRp(v){
+  if(v === undefined || v === null) v = 0;
+  return new Intl.NumberFormat('id-ID', {maximumFractionDigits:0}).format(Math.round(v));
+}
+function fmtPct(v){
+  if(!isFinite(v)) v = 0;
+  return (v*100).toFixed(1) + '%';
+}
+function categoryOf(kode){
+  kode = (kode||'').trim().toUpperCase();
+  if(kode.startsWith('KRY')) return 'salescounter';
+  if(kode.startsWith('PDG')){
+    const parts = kode.split('-');
+    const hasCV = parts.some(p => p.startsWith('CV'));
+    return hasCV ? 'motoris' : 'padang';
+  }
+  return 'luarkota';
+}
+function divisiOf(code){ return DIV1_CODES.includes(code) ? 1 : 2; }
+function isMaticName(name4){
+  if(!name4) return false;
+  const s = name4.toUpperCase();
+  if(/NON[\s-]?MATIC/.test(s)) return false;
+  return /MATIC/.test(s);
+}
+function aosInfoFromSalesName(namaSales){
+  if(!namaSales) return {isAOS:false, wilLetter:null};
+  const m = namaSales.trim().match(/^([A-Z]{1,2})>/);
+  if(!m) return {isAOS:false, wilLetter:null};
+  return {isAOS: m[1].length === 2, wilLetter: m[1][0]};
+}
+function monthKeyList(){
+  const keys=[];
+  for(let m=1;m<=12;m++){ keys.push('2026-' + String(m).padStart(2,'0')); }
+  return keys;
+}
+function ensurePath(obj, keys){
+  let cur = obj;
+  for(const k of keys){
+    if(!(k in cur)) cur[k] = {};
+    cur = cur[k];
+  }
+  return cur;
+}
+
+/* ============================= TAB SWITCH ============================= */
+document.querySelectorAll('nav.tabs button').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    document.querySelectorAll('nav.tabs button').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    ['toko','target','upload','laporan','qtykpi'].forEach(t=>{
+      document.getElementById('tab-'+t).style.display = (t===btn.dataset.tab) ? '' : 'none';
+    });
+    if(btn.dataset.tab==='target') renderTargetForm();
+    if(btn.dataset.tab==='laporan') renderLaporan();
+    if(btn.dataset.tab==='qtykpi') renderQtyKpiTab();
+  });
+});
+
+/* ============================= TAB 1: DAFTAR TOKO ============================= */
+function renderTokoStats(){
+  const total = Object.keys(state.tokoMaster).length;
+  const perWil = {1:0,2:0,3:0};
+  Object.values(state.tokoMaster).forEach(t=>{ if(perWil[t.wilayah]!==undefined) perWil[t.wilayah]++; });
+  document.getElementById('tokoStats').innerHTML = `
+    <div class="stat"><div class="num">${total}</div><div class="lbl">Total Toko</div></div>
+    <div class="stat"><div class="num">${perWil[1]}</div><div class="lbl">Wilayah 1</div></div>
+    <div class="stat"><div class="num">${perWil[2]}</div><div class="lbl">Wilayah 2</div></div>
+    <div class="stat"><div class="num">${perWil[3]}</div><div class="lbl">Wilayah 3</div></div>
+  `;
+}
+function renderTokoTable(filter){
+  filter = (filter||'').toLowerCase();
+  const body = document.getElementById('tokoTableBody');
+  const entries = Object.entries(state.tokoMaster)
+    .filter(([kode,t]) => !filter || kode.toLowerCase().includes(filter) || (t.nama||'').toLowerCase().includes(filter))
+    .sort((a,b)=> a[0].localeCompare(b[0]));
+  const catLabel = {padang:'Padang', motoris:'Motoris', luarkota:'Luar Kota', salescounter:'Sales Counter'};
+  body.innerHTML = entries.slice(0,300).map(([kode,t])=>`
+    <tr>
+      <td class="code">${kode}</td>
+      <td>${t.nama||''}</td>
+      <td>Wilayah ${t.wilayah}</td>
+      <td>${catLabel[categoryOf(kode)]}</td>
+      <td><button class="btn danger" style="padding:3px 8px; font-size:11px;" onclick="removeToko('${kode.replace(/'/g,"\\'")}')">Hapus</button></td>
+    </tr>
+  `).join('') + (entries.length>300 ? `<tr><td colspan="5" style="text-align:center;color:var(--sub);">... ${entries.length-300} toko lainnya (persempit pencarian)</td></tr>` : '');
+}
+window.removeToko = function(kode){
+  delete state.tokoMaster[kode];
+  saveTokoMaster();
+  renderTokoStats(); renderTokoTable(document.getElementById('tokoSearch').value);
+};
+document.getElementById('tokoSearch').addEventListener('input', e=> renderTokoTable(e.target.value));
+document.getElementById('addTokoBtn').addEventListener('click', ()=>{
+  const kode = document.getElementById('newKode').value.trim().toUpperCase();
+  const nama = document.getElementById('newNama').value.trim();
+  const wil = document.getElementById('newWilayah').value;
+  if(!kode) return;
+  state.tokoMaster[kode] = {nama, wilayah: wil};
+  saveTokoMaster();
+  document.getElementById('newKode').value=''; document.getElementById('newNama').value='';
+  renderTokoStats(); renderTokoTable(document.getElementById('tokoSearch').value);
+});
+
+function findHeaderIndex(headerRow, names){
+  for(const n of names){
+    const idx = headerRow.findIndex(h => (h||'').toString().trim().toUpperCase() === n.toUpperCase());
+    if(idx>=0) return idx;
+  }
+  return -1;
+}
+
+document.getElementById('tokoDrop').addEventListener('click', ()=> document.getElementById('tokoFile').click());
+document.getElementById('tokoFile').addEventListener('change', async (e)=>{
+  const file = e.target.files[0];
+  if(!file) return;
+  const buf = await file.arrayBuffer();
+  const wb = XLSX.read(buf, {type:'array'});
+  const ws = wb.Sheets[wb.SheetNames[0]];
+  const rows = XLSX.utils.sheet_to_json(ws, {header:1, raw:true, defval:null});
+  // cari baris header (mengandung 'Kode Toko')
+  let headerRowIdx = rows.findIndex(r => r.some(c => (c||'').toString().toUpperCase().includes('KODE TOKO')));
+  if(headerRowIdx < 0) headerRowIdx = 0;
+  const header = rows[headerRowIdx];
+  const idxKode = findHeaderIndex(header, ['Kode Toko']);
+  const idxNama = findHeaderIndex(header, ['Nama Toko']);
+  const idxWil = findHeaderIndex(header, ['Wilayah']);
+  let added=0, updated=0;
+  for(let i=headerRowIdx+1;i<rows.length;i++){
+    const r = rows[i];
+    if(!r || idxKode<0) continue;
+    let kode = r[idxKode];
+    if(!kode) continue;
+    kode = kode.toString().trim().toUpperCase();
+    const nama = idxNama>=0 ? (r[idxNama]||'') : '';
+    let wilRaw = idxWil>=0 ? (r[idxWil]||'') : '';
+    const wm = wilRaw.toString().match(/(\d+|I{1,3}$)/i);
+    let wilayah = '1';
+    if(wilRaw.toString().match(/III/i)) wilayah='3';
+    else if(wilRaw.toString().match(/II/i)) wilayah='2';
+    else if(wilRaw.toString().match(/I/i)) wilayah='1';
+    else if(wm) wilayah = wm[1];
+    if(state.tokoMaster[kode]) updated++; else added++;
+    state.tokoMaster[kode] = {nama: nama.toString(), wilayah};
+  }
+  await saveTokoMaster();
+  renderTokoStats(); renderTokoTable('');
+  setStatus(`Daftar toko diperbarui: ${added} toko baru, ${updated} toko diperbarui.`);
+  e.target.value='';
+});
+
+/* ============================= TAB 2: TARGET ============================= */
+function populateMonthSelects(){
+  const keys = monthKeyList();
+  ['targetBulan','laporanBulan'].forEach(id=>{
+    const sel = document.getElementById(id);
+    sel.innerHTML = keys.map(k=>{
+      const [y,m] = k.split('-');
+      return `<option value="${k}">${MONTH_NAMES[parseInt(m)-1]} ${y}</option>`;
+    }).join('');
+  });
+  // default ke bulan berjalan kalau ada, else Januari
+  const now = new Date();
+  const cur = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+  if(keys.includes(cur)){
+    document.getElementById('targetBulan').value = cur;
+    document.getElementById('laporanBulan').value = cur;
+  }
+}
+document.getElementById('targetBulan').addEventListener('change', renderTargetForm);
+document.getElementById('targetWilayah').addEventListener('change', renderTargetForm);
+
+function renderTargetForm(){
+  const bulan = document.getElementById('targetBulan').value;
+  const wilayah = document.getElementById('targetWilayah').value;
+  const existing = (state.targets[bulan] && state.targets[bulan][wilayah]) || {};
+  const div1 = existing['1'] || {};
+  const div2 = existing['2'] || {};
+  document.getElementById('salesNameDiv1').value = state.salesNames[bulan]?.[wilayah]?.['1'] || '';
+  document.getElementById('salesNameDiv2').value = state.salesNames[bulan]?.[wilayah]?.['2'] || '';
+  function fieldsFor(divKey, codes, existingObj){
+    return codes.map(c => `
+      <div class="field">
+        <label>${c} — ${PRODUCT_LABEL[c]}</label>
+        <input type="number" data-div="${divKey}" data-code="${c}" class="target-input" value="${existingObj[c] ?? ''}" placeholder="0">
+      </div>
+    `).join('');
+  }
+  document.getElementById('targetForm').innerHTML = `
+    <div class="block-head">Divisi 1 (${DIV1_CODES.join(', ')})</div>
+    <div class="row" style="border:1px solid var(--line); border-top:none; padding:14px; border-radius:0 0 6px 6px; background:var(--panel);">
+      ${fieldsFor('1', DIV1_CODES, div1)}
+    </div>
+    <div class="block-head">Divisi 2 (${DIV2_CODES.join(', ')})</div>
+    <div class="row" style="border:1px solid var(--line); border-top:none; padding:14px; border-radius:0 0 6px 6px; background:var(--panel);">
+      ${fieldsFor('2', DIV2_CODES, div2)}
+    </div>
+  `;
+  document.getElementById('targetSavedMsg').textContent='';
+}
+document.getElementById('saveTargetBtn').addEventListener('click', async ()=>{
+  const bulan = document.getElementById('targetBulan').value;
+  const wilayah = document.getElementById('targetWilayah').value;
+  const target = ensurePath(state.targets, [bulan, wilayah]);
+  document.querySelectorAll('.target-input').forEach(inp=>{
+    const div = inp.dataset.div, code = inp.dataset.code;
+    const val = parseFloat(inp.value);
+    if(!(div in target)) target[div]={};
+    target[div][code] = isNaN(val) ? 0 : val;
+  });
+  await saveTargets();
+  const salesPath = ensurePath(state.salesNames, [bulan, wilayah]);
+  salesPath['1'] = document.getElementById('salesNameDiv1').value.trim();
+  salesPath['2'] = document.getElementById('salesNameDiv2').value.trim();
+  await saveSalesNames();
+  document.getElementById('targetSavedMsg').textContent = 'Tersimpan ✓';
+});
+
+/* ============================= TAB 3: UPLOAD PENJUALAN ============================= */
+document.getElementById('jualDrop').addEventListener('click', ()=> document.getElementById('jualFile').click());
+document.getElementById('jualFile').addEventListener('change', async (e)=>{
+  const file = e.target.files[0];
+  if(!file) return;
+  document.getElementById('uploadResult').innerHTML = `<div class="banner info">Memproses ${file.name}…</div>`;
+  const buf = await file.arrayBuffer();
+  let wb;
+  try{
+    wb = XLSX.read(buf, {type:'array'});
+  }catch(err){
+    document.getElementById('uploadResult').innerHTML = `<div class="banner" style="border-color:var(--red); color:var(--red);">Gagal membaca file: ${err.message}</div>`;
+    return;
+  }
+  const ws = wb.Sheets[wb.SheetNames[0]];
+  const rows = XLSX.utils.sheet_to_json(ws, {header:1, raw:true, defval:null});
+  const header = rows[0].map(h => (h||'').toString().trim().toUpperCase());
+  const idx = {
+    kodeToko: header.indexOf('ID PELANGGAN'),
+    namaSales: header.indexOf('NAMA SALES'),
+    cat2: header.indexOf('PRODUCT CATEGORY NAME 2'),
+    cat4: header.indexOf('PRODUCT CATEGORY NAME 4'),
+    dpp: header.indexOf('DPP'),
+    bulan: header.indexOf('BULAN'),
+    tahun: header.indexOf('TAHUN'),
+    qty: header.indexOf('QTY'),
+    idProduk: header.indexOf('ID PRODUK'),
+    mg4: header.indexOf('MG 4'),
+  };
+  if(idx.kodeToko<0 || idx.dpp<0 || idx.cat2<0){
+    document.getElementById('uploadResult').innerHTML = `<div class="banner" style="border-color:var(--red); color:var(--red);">Format file tidak dikenali — kolom wajib (ID PELANGGAN, PRODUCT CATEGORY NAME 2, DPP) tidak ditemukan.</div>`;
+    return;
+  }
+
+  const unknownAgg = {}; // kode -> {totalDpp, rows: [{code,dpp,isMatic,isAOS,bulanKey}]}
+  const bulanTouched = new Set();
+  // buffer per bulan supaya replace, bukan tambah
+  const bufActuals = {}, bufMatic = {}, bufAOS = {}, bufSC = {};
+  const bufQty = {}, bufOA = {}, bufSKU = {};
+  let unmappedProd = new Set();
+  let processedRows = 0;
+
+  for(let i=1;i<rows.length;i++){
+    const r = rows[i];
+    if(!r) continue;
+    const kodeTokoRaw = r[idx.kodeToko];
+    const dppRaw = r[idx.dpp];
+    if(kodeTokoRaw==null || dppRaw==null) continue;
+    const kodeToko = kodeTokoRaw.toString().trim().toUpperCase();
+    const dpp = parseFloat(dppRaw);
+    if(isNaN(dpp)) continue;
+    const cat2 = (r[idx.cat2]||'').toString().trim().toUpperCase();
+    const code = PRODUCT_MAP[cat2];
+    if(!code){ unmappedProd.add(r[idx.cat2]); continue; }
+    const cat4 = idx.cat4>=0 ? r[idx.cat4] : '';
+    const namaSales = idx.namaSales>=0 ? r[idx.namaSales] : '';
+    const qty = idx.qty>=0 ? (parseFloat(r[idx.qty])||0) : 0;
+    const idProduk = idx.idProduk>=0 ? r[idx.idProduk] : null;
+    const mg4 = idx.mg4>=0 ? (r[idx.mg4]||'').toString().trim() : null;
+    let bulanN = idx.bulan>=0 ? (r[idx.bulan]||'').toString().padStart(2,'0') : null;
+    let tahunN = idx.tahun>=0 ? (r[idx.tahun]||'').toString() : null;
+    if(!bulanN || !tahunN) continue;
+    const bulanKey = `${tahunN}-${bulanN}`;
+    bulanTouched.add(bulanKey);
+    processedRows++;
+
+    const kategori = categoryOf(kodeToko);
+    const divisi = divisiOf(code);
+    const matic = isMaticName(cat4);
+    const {isAOS, wilLetter} = aosInfoFromSalesName(namaSales);
+
+    if(kategori === 'salescounter'){
+      ensurePath(bufSC, [bulanKey]);
+      bufSC[bulanKey][code] = (bufSC[bulanKey][code]||0) + dpp;
+      continue;
+    }
+    // butuh wilayah
+    const master = state.tokoMaster[kodeToko];
+    if(!master){
+      if(!unknownAgg[kodeToko]) unknownAgg[kodeToko] = {totalDpp:0, rows:[], namaHint:'', wilVotes:{1:0,2:0,3:0}};
+      unknownAgg[kodeToko].totalDpp += dpp;
+      unknownAgg[kodeToko].rows.push({code, dpp, matic, isAOS, bulanKey, kategori, qty, idProduk, mg4, kodeToko});
+      const wilFromLetter = {A:'1', B:'2', C:'3'}[wilLetter];
+      if(wilFromLetter) unknownAgg[kodeToko].wilVotes[wilFromLetter] += dpp;
+      continue;
+    }
+    const wilayah = master.wilayah;
+    const pathA = ensurePath(bufActuals, [bulanKey, wilayah, divisi, kategori]);
+    pathA[code] = (pathA[code]||0) + dpp;
+    if(matic && (code in MATIC_PCT)){
+      const pathM = ensurePath(bufMatic, [bulanKey, wilayah, divisi]);
+      pathM[code] = (pathM[code]||0) + dpp;
+    }
+    if(isAOS){
+      ensurePath(bufAOS, [bulanKey, wilayah]);
+      bufAOS[bulanKey][wilayah][divisi] = (bufAOS[bulanKey][wilayah][divisi]||0) + dpp;
+    }
+    if(mg4){
+      const pathQ = ensurePath(bufQty, [bulanKey, wilayah, divisi]);
+      pathQ[mg4] = (pathQ[mg4]||0) + qty;
+    }
+    const oaArr = ensurePath(bufOA, [bulanKey, wilayah]);
+    if(!oaArr[divisi]) oaArr[divisi] = new Set();
+    oaArr[divisi].add(kodeToko);
+    const skuArr = ensurePath(bufSKU, [bulanKey, wilayah]);
+    if(!skuArr[divisi]) skuArr[divisi] = new Set();
+    if(idProduk) skuArr[divisi].add(idProduk);
+  }
+
+  // merge buffer ke state, replace tiap bulan yang tersentuh
+  bulanTouched.forEach(bk=>{
+    state.actuals[bk] = bufActuals[bk] || {};
+    state.maticActual[bk] = bufMatic[bk] || {};
+    state.aosActual[bk] = bufAOS[bk] || {};
+    state.salesCounter[bk] = bufSC[bk] || {};
+    state.qtyActual[bk] = bufQty[bk] || {};
+    state.oaSet[bk] = {};
+    Object.keys(bufOA[bk]||{}).forEach(wil=>{
+      state.oaSet[bk][wil] = {};
+      Object.keys(bufOA[bk][wil]).forEach(div=>{ state.oaSet[bk][wil][div] = [...bufOA[bk][wil][div]]; });
+    });
+    state.skuSet[bk] = {};
+    Object.keys(bufSKU[bk]||{}).forEach(wil=>{
+      state.skuSet[bk][wil] = {};
+      Object.keys(bufSKU[bk][wil]).forEach(div=>{ state.skuSet[bk][wil][div] = [...bufSKU[bk][wil][div]]; });
+    });
+  });
+  await saveActualsBundle();
+  await saveQtyActualBundle();
+
+  state.pendingUnknown = unknownAgg;
+  renderUnknownStores();
+
+  const bulanList = [...bulanTouched].map(bk=>{
+    const [y,m]=bk.split('-'); return `${MONTH_NAMES[parseInt(m)-1]} ${y}`;
+  }).join(', ');
+
+  let msg = `<div class="banner success">Berhasil memproses ${processedRows} baris transaksi untuk bulan: ${bulanList || '-'}.</div>`;
+  if(unmappedProd.size>0){
+    msg += `<div class="banner" style="border-color:var(--red); color:var(--red);">Ada kategori produk yang tidak dikenali dan dilewati: ${[...unmappedProd].join(', ')}</div>`;
+  }
+  const unknownCount = Object.keys(unknownAgg).length;
+  if(unknownCount>0){
+    msg += `<div class="banner">${unknownCount} toko belum ada di Daftar Toko — omsetnya BELUM masuk laporan sampai Anda tentukan wilayahnya di bawah.</div>`;
+  }
+  document.getElementById('uploadResult').innerHTML = msg;
+  e.target.value='';
+});
+
+function suggestWilayah(info){
+  const votes = info.wilVotes || {1:0,2:0,3:0};
+  let best = null, bestVal = 0;
+  ['1','2','3'].forEach(w=>{ if((votes[w]||0) > bestVal){ best = w; bestVal = votes[w]; } });
+  return {wil: best, votes};
+}
+function renderUnknownStores(){
+  const area = document.getElementById('unknownStoreArea');
+  const entries = Object.entries(state.pendingUnknown);
+  if(entries.length===0){ area.innerHTML=''; return; }
+  area.innerHTML = `<h3 style="margin-top:24px;">Toko belum dikenal — tentukan wilayahnya</h3>` + entries.map(([kode,info])=>{
+    const {wil, votes} = suggestWilayah(info);
+    const opt = w => `<option value="${w}" ${wil===w?'selected':''}>Wilayah ${w}</option>`;
+    const suggestNote = wil
+      ? `<div style="color:var(--amber); font-size:11.5px; margin-bottom:6px;">💡 Disarankan Wilayah ${wil} — berdasarkan Rp${fmtRp(votes[wil])} transaksi toko ini yang nama sales-nya menandakan Wilayah ${wil}. Cek dulu sebelum simpan.</div>`
+      : `<div style="color:var(--sub); font-size:11.5px; margin-bottom:6px;">Tidak ada petunjuk wilayah dari nama sales — silakan pilih manual.</div>`;
+    return `
+    <div class="unknown-card" id="unk-${kode}">
+      <div class="code">${kode}</div>
+      <div class="amt">Total DPP: Rp ${fmtRp(info.totalDpp)} — kategori otomatis: ${KATEGORI_LABEL[categoryOf(kode)] || categoryOf(kode)}</div>
+      ${suggestNote}
+      <div class="row">
+        <select id="wil-${kode}">
+          ${opt('1')}${opt('2')}${opt('3')}
+        </select>
+        <input type="text" id="nama-${kode}" placeholder="Nama toko (opsional)">
+        <button class="btn" onclick="resolveUnknown('${kode.replace(/'/g,"\\'")}')">Simpan &amp; masukkan ke laporan</button>
+      </div>
+    </div>
+  `;}).join('');
+}
+window.resolveUnknown = async function(kode){
+  const wilayah = document.getElementById('wil-'+kode).value;
+  const nama = document.getElementById('nama-'+kode).value;
+  state.tokoMaster[kode] = {nama, wilayah};
+  await saveTokoMaster();
+  const info = state.pendingUnknown[kode];
+  info.rows.forEach(row=>{
+    const div = divisiOf(row.code);
+    const pathA = ensurePath(state.actuals, [row.bulanKey, wilayah, div, row.kategori]);
+    pathA[row.code] = (pathA[row.code]||0) + row.dpp;
+    if(row.matic && (row.code in MATIC_PCT)){
+      const pathM = ensurePath(state.maticActual, [row.bulanKey, wilayah, div]);
+      pathM[row.code] = (pathM[row.code]||0) + row.dpp;
+    }
+    if(row.isAOS){
+      ensurePath(state.aosActual, [row.bulanKey, wilayah]);
+      state.aosActual[row.bulanKey][wilayah][div] = (state.aosActual[row.bulanKey][wilayah][div]||0) + row.dpp;
+    }
+    if(row.mg4){
+      const pathQ = ensurePath(state.qtyActual, [row.bulanKey, wilayah, div]);
+      pathQ[row.mg4] = (pathQ[row.mg4]||0) + row.qty;
+    }
+    ensurePath(state.oaSet, [row.bulanKey, wilayah]);
+    if(!state.oaSet[row.bulanKey][wilayah][div]) state.oaSet[row.bulanKey][wilayah][div] = [];
+    if(!state.oaSet[row.bulanKey][wilayah][div].includes(row.kodeToko)) state.oaSet[row.bulanKey][wilayah][div].push(row.kodeToko);
+    ensurePath(state.skuSet, [row.bulanKey, wilayah]);
+    if(!state.skuSet[row.bulanKey][wilayah][div]) state.skuSet[row.bulanKey][wilayah][div] = [];
+    if(row.idProduk && !state.skuSet[row.bulanKey][wilayah][div].includes(row.idProduk)) state.skuSet[row.bulanKey][wilayah][div].push(row.idProduk);
+  });
+  delete state.pendingUnknown[kode];
+  await saveActualsBundle();
+  await saveQtyActualBundle();
+  renderTokoStats(); renderTokoTable('');
+  renderUnknownStores();
+  setStatus(`Toko ${kode} ditambahkan ke Wilayah ${wilayah} dan omsetnya sudah masuk laporan.`);
+};
+
+/* ============================= TAB 4: LAPORAN ============================= */
+document.getElementById('laporanBulan').addEventListener('change', renderLaporan);
+
+function computeDivisiBlock(bulan, wilayah, divisi, codes){
+  const target = (state.targets[bulan]?.[wilayah]?.[divisi]) || {};
+  const actual = (state.actuals[bulan]?.[wilayah]?.[divisi]) || {};
+  const matic = (state.maticActual[bulan]?.[wilayah]?.[divisi]) || {};
+  const aos = (state.aosActual[bulan]?.[wilayah]?.[divisi]) || 0;
+
+  const rows = {targetTotal:{}, padang:{}, motoris:{}, luarkota:{}, actualTotal:{}, ach:{}, targetMatic:{}, actMatic:{}, achMatic:{}};
+  let tTotalSum=0, aTotalSum=0, tMaticSum=0, aMaticSum=0;
+  codes.forEach(c=>{
+    const t = target[c]||0;
+    const p = actual.padang?.[c]||0;
+    const m = actual.motoris?.[c]||0;
+    const l = actual.luarkota?.[c]||0;
+    const a = p+m+l;
+    rows.targetTotal[c]=t; rows.padang[c]=p; rows.motoris[c]=m; rows.luarkota[c]=l;
+    rows.actualTotal[c]=a; rows.ach[c]= t? a/t : 0;
+    const tm = (c in MATIC_PCT) ? t*MATIC_PCT[c] : null;
+    const am = matic[c]||0;
+    rows.targetMatic[c]=tm; rows.actMatic[c]= (c in MATIC_PCT) ? am : null;
+    rows.achMatic[c]= (tm) ? am/tm : ((c in MATIC_PCT)?0:null);
+    tTotalSum+=t; aTotalSum+=a;
+    if(tm!==null){ tMaticSum+=tm; aMaticSum+=am; }
+  });
+  const targetAOS = tTotalSum * AOS_PCT;
+  const achAOS = targetAOS ? aos/targetAOS : 0;
+  return {rows, tTotalSum, aTotalSum, tMaticSum, aMaticSum, targetAOS, actAOS:aos, achAOS};
+}
+
+function actCellClass(v){
+  if(!v || v===0) return 'v-red';
+  if(v < 1000000) return 'v-yellow';
+  return 'v-plain';
+}
+// baris yang tampil per blok divisi, dalam urutan seperti contoh
+const ROW_DEFS = [
+  {key:'targetTotal', label:'Target Total', kind:'plain'},
+  {key:'padang',      label:'Act Padang',   kind:'act'},
+  {key:'motoris',     label:'Act Motoris',  kind:'act'},
+  {key:'luarkota',    label:'Act Luar Kota',kind:'act'},
+  {key:'actualTotal', label:'Actual Total', kind:'total'},
+  {key:'ach',         label:'Ach Realisasi %', kind:'pct'},
+  {key:'targetMatic', label:'Target Matic', kind:'plain'},
+  {key:'actMatic',    label:'Act Matic',    kind:'plain'},
+  {key:'achMatic',    label:'Ach Matic %',  kind:'pct'},
+];
+const AOS_ROWS = [
+  {key:'targetAOS', label:'Target AOS'},
+  {key:'actAOS',    label:'Act AOS'},
+  {key:'achAOS',    label:'Ach AOS %'},
+];
+
+function buildDivisiRows(block, codes, allCodes, divLabel){
+  const {rows, tTotalSum, aTotalSum, tMaticSum, aMaticSum, targetAOS, actAOS, achAOS} = block;
+  const trs = [];
+  ROW_DEFS.forEach(def=>{
+    const cells = allCodes.map(c=>{
+      const applicable = codes.includes(c);
+      if(!applicable) return `<td class="na"></td>`;
+      let v = rows[def.key][c];
+      if(def.kind==='pct') return `<td class="v-pct">${fmtPct(v)}</td>`;
+      if(v==null) return `<td class="v-plain">—</td>`;
+      let cls = def.kind==='act' ? actCellClass(v) : (def.kind==='total' ? 'v-total' : 'v-plain');
+      return `<td class="${cls}">${fmtRp(v)}</td>`;
+    }).join('');
+    let totalCell;
+    if(def.key==='targetTotal') totalCell = fmtRp(tTotalSum);
+    else if(def.key==='actualTotal') totalCell = fmtRp(aTotalSum);
+    else if(def.key==='ach') totalCell = fmtPct(tTotalSum?aTotalSum/tTotalSum:0);
+    else if(def.key==='targetMatic') totalCell = fmtRp(tMaticSum);
+    else if(def.key==='actMatic') totalCell = fmtRp(aMaticSum);
+    else if(def.key==='achMatic') totalCell = fmtPct(tMaticSum?aMaticSum/tMaticSum:0);
+    else if(['padang','motoris','luarkota'].includes(def.key)) totalCell = fmtRp(codes.reduce((s,c)=>s+(rows[def.key][c]||0),0));
+    else totalCell = '';
+    const totalCls = def.key==='actualTotal' ? 'v-total' : (def.kind==='pct' ? 'v-pct' : (def.kind==='act' ? actCellClass(codes.reduce((s,c)=>s+(rows[def.key][c]||0),0)) : 'v-plain'));
+    trs.push({label:def.label, cells, totalCell, totalCls});
+  });
+  AOS_ROWS.forEach(def=>{
+    const cells = allCodes.map(()=>`<td class="na"></td>`).join('');
+    let totalCell, totalCls='v-plain';
+    if(def.key==='targetAOS') totalCell = fmtRp(targetAOS);
+    else if(def.key==='actAOS'){ totalCell = fmtRp(actAOS); totalCls = actCellClass(actAOS); }
+    else totalCell = fmtPct(achAOS), totalCls='v-pct';
+    trs.push({label:def.label, cells, totalCell, totalCls});
+  });
+  return trs;
+}
+
+function renderLaporan(){
+  const bulan = document.getElementById('laporanBulan').value;
+  if(!bulan) return;
+  renderSalesmanSim(bulan);
+  const [y,m] = bulan.split('-');
+  const monthLabel = `Bln ${MONTH_NAMES[parseInt(m)-1]} ${y}`;
+  const allCodes = PRODUCT_CODES;
+  const grand = {target:{}, actual:{}, padang:{}, motoris:{}, luarkota:{}, targetMatic:{}, actMatic:{}};
+  allCodes.forEach(c=>{ grand.target[c]=0; grand.actual[c]=0; grand.padang[c]=0; grand.motoris[c]=0; grand.luarkota[c]=0; grand.targetMatic[c]=0; grand.actMatic[c]=0; });
+  let grandTargetAOS=0, grandActAOS=0;
+
+  let html = `<table class="sheet"><thead>
+    <tr><th rowspan="2">Wilayah</th><th rowspan="2">Divisi</th><th rowspan="2">Diskripsi</th><th colspan="${allCodes.length+1}" class="month-head">${monthLabel}</th></tr>
+    <tr>${allCodes.map(c=>`<th>${c}</th>`).join('')}<th>Total</th></tr>
+  </thead><tbody>`;
+
+  [1,2,3].forEach(wil=>{
+    const salesW = state.salesNames[bulan]?.[wil] || {};
+    const b1 = computeDivisiBlock(bulan, String(wil), '1', DIV1_CODES);
+    const b2 = computeDivisiBlock(bulan, String(wil), '2', DIV2_CODES);
+    [ [b1,DIV1_CODES], [b2,DIV2_CODES] ].forEach(([b,codes])=>{
+      codes.forEach(c=>{
+        grand.target[c]+=b.rows.targetTotal[c]; grand.actual[c]+=b.rows.actualTotal[c];
+        grand.padang[c]+=b.rows.padang[c]; grand.motoris[c]+=b.rows.motoris[c]; grand.luarkota[c]+=b.rows.luarkota[c];
+        if(b.rows.targetMatic[c]!=null){ grand.targetMatic[c]+=b.rows.targetMatic[c]; grand.actMatic[c]+=(b.rows.actMatic[c]||0); }
+      });
+      grandTargetAOS += b.targetAOS; grandActAOS += b.actAOS;
+    });
+
+    // header berulang di setiap wilayah, supaya bisa di-screenshot per wilayah dan tetap terbaca kolomnya
+    html += `<tr class="divider"><th>Wilayah</th><th>Divisi</th><th>Diskripsi</th><th colspan="${allCodes.length+1}" class="month-head">${monthLabel}</th></tr>`;
+    html += `<tr><th></th><th></th><th></th>${allCodes.map(c=>`<th>${c}</th>`).join('')}<th>Total</th></tr>`;
+
+    const rows1 = buildDivisiRows(b1, DIV1_CODES, allCodes, 'Div -1');
+    const rows2 = buildDivisiRows(b2, DIV2_CODES, allCodes, 'Div -2');
+    const totalRows = rows1.length + rows2.length;
+
+    rows1.forEach((r,i)=>{
+      html += '<tr>';
+      if(i===0) html += `<td class="lbl-wilayah" rowspan="${totalRows}">Wilayah -${wil}</td>`;
+      if(i===0) html += `<td class="lbl-divisi" rowspan="${rows1.length}">Div -1${salesW['1']?` (${salesW['1']})`:''}</td>`;
+      html += `<td class="lbl-desc${r.label.startsWith('Act ')||r.label.startsWith('Ach')||r.label.startsWith('Target')&&i>0?' sub':''}">${r.label}</td>${r.cells}<td class="${r.totalCls}">${r.totalCell}</td></tr>`;
+    });
+    rows2.forEach((r,i)=>{
+      html += '<tr>';
+      if(i===0) html += `<td class="lbl-divisi" rowspan="${rows2.length}">Div -2${salesW['2']?` (${salesW['2']})`:''}</td>`;
+      html += `<td class="lbl-desc${r.label.startsWith('Act ')||r.label.startsWith('Ach')||r.label.startsWith('Target')&&i>0?' sub':''}">${r.label}</td>${r.cells}<td class="${r.totalCls}">${r.totalCell}</td></tr>`;
+    });
+  });
+
+  // sales counter
+  const sc = state.salesCounter[bulan] || {};
+  allCodes.forEach(c=>{ grand.actual[c]+=(sc[c]||0); });
+  html += `<tr class="divider"><td class="lbl-wilayah"></td><td class="lbl-divisi">Sales Counter</td><td class="lbl-desc">Realisasi Sales</td>
+    ${allCodes.map(c=>`<td class="${actCellClass(sc[c]||0)}">${fmtRp(sc[c]||0)}</td>`).join('')}
+    <td class="v-total">${fmtRp(allCodes.reduce((s,c)=>s+(sc[c]||0),0))}</td></tr>`;
+
+  // grand total (Total MAJ) - lengkap seperti file asli
+  const tSum = allCodes.reduce((s,c)=>s+grand.target[c],0), aSum = allCodes.reduce((s,c)=>s+grand.actual[c],0);
+  const tMaticSum = allCodes.reduce((s,c)=>s+grand.targetMatic[c],0), aMaticSum = allCodes.reduce((s,c)=>s+grand.actMatic[c],0);
+  const maticCodes = Object.keys(MATIC_PCT);
+  const cellsFor = (obj, cls, onlyMaticCodes) => allCodes.map(c=>{
+    if(onlyMaticCodes && !maticCodes.includes(c)) return `<td class="na"></td>`;
+    return `<td class="${typeof cls==='function'?cls(obj[c]):cls}">${fmtRp(obj[c])}</td>`;
+  }).join('');
+  html += `<tr class="divider"><td class="lbl-wilayah" rowspan="12"></td><td class="lbl-divisi" rowspan="12">Total MAJ</td><td class="lbl-desc">Target Grand Total</td>
+    ${cellsFor(grand.target,'v-plain')}<td class="v-total">${fmtRp(tSum)}</td></tr>`;
+  html += `<tr><td class="lbl-desc sub">Act Padang</td>${cellsFor(grand.padang, actCellClass)}<td class="v-plain">${fmtRp(allCodes.reduce((s,c)=>s+grand.padang[c],0))}</td></tr>`;
+  html += `<tr><td class="lbl-desc sub">Act Motoris</td>${cellsFor(grand.motoris, actCellClass)}<td class="v-plain">${fmtRp(allCodes.reduce((s,c)=>s+grand.motoris[c],0))}</td></tr>`;
+  html += `<tr><td class="lbl-desc sub">Act Luar Kota</td>${cellsFor(grand.luarkota, actCellClass)}<td class="v-plain">${fmtRp(allCodes.reduce((s,c)=>s+grand.luarkota[c],0))}</td></tr>`;
+  html += `<tr><td class="lbl-desc">Actual Total</td>${cellsFor(grand.actual, 'v-total')}<td class="v-total">${fmtRp(aSum)}</td></tr>`;
+  html += `<tr><td class="lbl-desc sub">Ach Realisasi %</td>${allCodes.map(c=>`<td class="v-pct">${fmtPct(grand.target[c]?grand.actual[c]/grand.target[c]:0)}</td>`).join('')}<td class="v-pct">${fmtPct(tSum?aSum/tSum:0)}</td></tr>`;
+  html += `<tr><td class="lbl-desc sub">Target Matic</td>${cellsFor(grand.targetMatic,'v-plain',true)}<td class="v-plain">${fmtRp(tMaticSum)}</td></tr>`;
+  html += `<tr><td class="lbl-desc sub">Act Matic</td>${cellsFor(grand.actMatic, actCellClass, true)}<td class="v-plain">${fmtRp(aMaticSum)}</td></tr>`;
+  html += `<tr><td class="lbl-desc sub">Ach Matic %</td>${allCodes.map(c=> maticCodes.includes(c) ? `<td class="v-pct">${fmtPct(grand.targetMatic[c]?grand.actMatic[c]/grand.targetMatic[c]:0)}</td>` : `<td class="na"></td>`).join('')}<td class="v-pct">${fmtPct(tMaticSum?aMaticSum/tMaticSum:0)}</td></tr>`;
+  html += `<tr><td class="lbl-desc sub">Target AOS</td>${allCodes.map(()=>`<td class="na"></td>`).join('')}<td class="v-plain">${fmtRp(grandTargetAOS)}</td></tr>`;
+  html += `<tr><td class="lbl-desc sub">Act AOS</td>${allCodes.map(()=>`<td class="na"></td>`).join('')}<td class="${actCellClass(grandActAOS)}">${fmtRp(grandActAOS)}</td></tr>`;
+  html += `<tr><td class="lbl-desc sub">Ach AOS %</td>${allCodes.map(()=>`<td class="na"></td>`).join('')}<td class="v-pct">${fmtPct(grandTargetAOS?grandActAOS/grandTargetAOS:0)}</td></tr>`;
+
+  html += `</tbody></table>`;
+  document.getElementById('laporanArea').innerHTML = `<div class="sheet-wrap">${html}</div>`;
+}
+
+function achLevelClass(pct){
+  if(pct >= 1) return 'high';
+  if(pct >= 0.7) return 'mid';
+  return 'low';
+}
+function renderSalesmanSim(bulan){
+  const wrap = document.getElementById('salesmanSimArea');
+  let html = `<div class="sim-grid">`;
+  [1,2,3].forEach(wil=>{
+    [['1',DIV1_CODES],['2',DIV2_CODES]].forEach(([divKey,codes])=>{
+      const block = computeDivisiBlock(bulan, String(wil), divKey, codes);
+      const namaSales = state.salesNames[bulan]?.[wil]?.[divKey] || '';
+      const label = namaSales ? `${namaSales}` : `Div -${divKey}`;
+      const achNow = block.tTotalSum ? block.aTotalSum/block.tTotalSum : 0;
+      const curPct = (state.targetPct[bulan]?.[wil]?.[divKey]) ?? 100;
+      const targetRp = block.tTotalSum * (curPct/100);
+      const shortfall = Math.max(0, targetRp - block.aTotalSum);
+      const done = shortfall <= 0 && block.tTotalSum > 0;
+      const uid = `sim-${wil}-${divKey}`;
+      html += `<div class="sim-card">
+        <h4>${label}</h4>
+        <div class="wilinfo">Wilayah ${wil} — Divisi ${divKey}</div>
+        <div class="achnow ${achLevelClass(achNow)}">${fmtPct(achNow)}</div>
+        <div class="achnow-lbl">pencapaian saat ini (Rp ${fmtRp(block.aTotalSum)} dari target Rp ${fmtRp(block.tTotalSum)})</div>
+        <div class="pct-row" id="${uid}-chips">
+          ${[70,80,90,100].map(p=>`<span class="pct-chip${p===curPct?' active':''}" data-pct="${p}" data-uid="${uid}">${p}%</span>`).join('')}
+        </div>
+        <div class="pct-input-row">
+          <label style="font-size:11.5px; color:var(--sub);">Target capaian:</label>
+          <input type="number" id="${uid}-input" value="${curPct}" min="1" max="500">
+          <span style="font-size:12px; color:var(--sub);">%</span>
+        </div>
+        <div class="result ${done?'done':''}" id="${uid}-result">
+          ${done
+            ? `<div class="short">Target ${curPct}% sudah tercapai ✓</div>`
+            : `<div style="color:var(--sub);">Kekurangan agar capai ${curPct}%:</div><div class="short">Rp ${fmtRp(shortfall)}</div>`}
+        </div>
+      </div>`;
+    });
+  });
+  html += `</div>`;
+  wrap.innerHTML = html;
+
+  wrap.querySelectorAll('.pct-chip').forEach(chip=>{
+    chip.addEventListener('click', ()=>{
+      const uid = chip.dataset.uid;
+      document.getElementById(uid+'-input').value = chip.dataset.pct;
+      applySimPct(bulan, uid, chip.dataset.pct);
+    });
+  });
+  wrap.querySelectorAll('[id$="-input"]').forEach(inp=>{
+    inp.addEventListener('input', ()=>{
+      const uid = inp.id.replace('-input','');
+      applySimPct(bulan, uid, inp.value);
+    });
+  });
+}
+async function applySimPct(bulan, uid, pctVal){
+  const [, wil, divKey] = uid.split('-');
+  const pct = parseFloat(pctVal) || 0;
+  ensurePath(state.targetPct, [bulan, wil])[divKey] = pct;
+  await saveTargetPct();
+  renderSalesmanSim(bulan);
+}
+
+/* ============================= EXPORT EXCEL ============================= */
+document.getElementById('exportBtn').addEventListener('click', ()=>{
+  const bulan = document.getElementById('laporanBulan').value;
+  const [y,m] = bulan.split('-');
+  const label = `Bln ${MONTH_NAMES[parseInt(m)-1]} ${y}`;
+  const aoa = [];
+  aoa.push(['WILAYAH','Divisi','Diskripsi','','','',label,'','','','','','','']);
+  aoa.push(['','','','','','', ...PRODUCT_CODES,'Total']);
+
+  function pushBlock(wilLabel, divLabel, block, codes){
+    const {rows, tTotalSum, aTotalSum, tMaticSum, aMaticSum, targetAOS, actAOS, achAOS} = block;
+    const fullRow = (label, arr, total) => {
+      const line = new Array(6).fill('');
+      PRODUCT_CODES.forEach(c=>{
+        const i = PRODUCT_CODES.indexOf(c);
+        line[6+i] = (codes.includes(c) && arr) ? (arr[c] ?? '') : '';
+      });
+      line[0]=''; line[13]= total ?? '';
+      return line;
+    };
+    aoa.push([wilLabel, divLabel, 'Target Total', ...(()=>{const l=fullRow(null,rows.targetTotal,tTotalSum); return l.slice(3);})()]);
+    ['padang','motoris','luarkota'].forEach(k=>{
+      aoa.push(['','',KATEGORI_LABEL[k], ...(()=>{const l=fullRow(null,rows[k],codes.reduce((s,c)=>s+rows[k][c],0)); return l.slice(3);})()]);
+    });
+    aoa.push(['','','Actual Total', ...(()=>{const l=fullRow(null,rows.actualTotal,aTotalSum); return l.slice(3);})()]);
+    aoa.push(['','','Ach Realisasi %', ...(()=>{const l=fullRow(null,rows.ach,tTotalSum?aTotalSum/tTotalSum:0); return l.slice(3);})()]);
+    aoa.push(['','','Target Matic', ...(()=>{const l=fullRow(null,rows.targetMatic,tMaticSum); return l.slice(3);})()]);
+    aoa.push(['','','Act Matic', ...(()=>{const l=fullRow(null,rows.actMatic,aMaticSum); return l.slice(3);})()]);
+    aoa.push(['','','Ach Matic %', ...(()=>{const l=fullRow(null,rows.achMatic,tMaticSum?aMaticSum/tMaticSum:0); return l.slice(3);})()]);
+    const emptyLine = new Array(11).fill('');
+    aoa.push(['','','Target AOS', ...emptyLine, targetAOS]);
+    aoa.push(['','','Act AOS', ...emptyLine, actAOS]);
+    aoa.push(['','','Ach AOS %', ...emptyLine, achAOS]);
+  }
+
+  const grand = {target:{}, actual:{}, padang:{}, motoris:{}, luarkota:{}, targetMatic:{}, actMatic:{}};
+  PRODUCT_CODES.forEach(c=>{ grand.target[c]=0; grand.actual[c]=0; grand.padang[c]=0; grand.motoris[c]=0; grand.luarkota[c]=0; grand.targetMatic[c]=0; grand.actMatic[c]=0; });
+  let grandTargetAOS=0, grandActAOS=0;
+
+  [1,2,3].forEach(wil=>{
+    const b1 = computeDivisiBlock(bulan, String(wil), '1', DIV1_CODES);
+    const b2 = computeDivisiBlock(bulan, String(wil), '2', DIV2_CODES);
+    const salesW = state.salesNames[bulan]?.[wil] || {};
+    pushBlock(`Wilayah -${wil}`, `Div -1${salesW['1']?` (${salesW['1']})`:''}`, b1, DIV1_CODES);
+    pushBlock('', `Div -2${salesW['2']?` (${salesW['2']})`:''}`, b2, DIV2_CODES);
+    [ [b1,DIV1_CODES], [b2,DIV2_CODES] ].forEach(([b,codes])=>{
+      codes.forEach(c=>{
+        grand.target[c]+=b.rows.targetTotal[c]; grand.actual[c]+=b.rows.actualTotal[c];
+        grand.padang[c]+=b.rows.padang[c]; grand.motoris[c]+=b.rows.motoris[c]; grand.luarkota[c]+=b.rows.luarkota[c];
+        if(b.rows.targetMatic[c]!=null){ grand.targetMatic[c]+=b.rows.targetMatic[c]; grand.actMatic[c]+=(b.rows.actMatic[c]||0); }
+      });
+      grandTargetAOS += b.targetAOS; grandActAOS += b.actAOS;
+    });
+  });
+
+  const sc = state.salesCounter[bulan] || {};
+  aoa.push(['','Sales Counter','Realisasi Sales', ...PRODUCT_CODES.map(c=>sc[c]||''), PRODUCT_CODES.reduce((s,c)=>s+(sc[c]||0),0)]);
+  PRODUCT_CODES.forEach(c=>{ grand.actual[c]+=(sc[c]||0); });
+
+  const maticCodes = Object.keys(MATIC_PCT);
+  const tSum = PRODUCT_CODES.reduce((s,c)=>s+grand.target[c],0), aSum = PRODUCT_CODES.reduce((s,c)=>s+grand.actual[c],0);
+  const tMaticSum = PRODUCT_CODES.reduce((s,c)=>s+grand.targetMatic[c],0), aMaticSum = PRODUCT_CODES.reduce((s,c)=>s+grand.actMatic[c],0);
+  aoa.push(['','Total MAJ','Target Grand Total', ...PRODUCT_CODES.map(c=>grand.target[c]), tSum]);
+  aoa.push(['','','Act Padang', ...PRODUCT_CODES.map(c=>grand.padang[c]), PRODUCT_CODES.reduce((s,c)=>s+grand.padang[c],0)]);
+  aoa.push(['','','Act Motoris', ...PRODUCT_CODES.map(c=>grand.motoris[c]), PRODUCT_CODES.reduce((s,c)=>s+grand.motoris[c],0)]);
+  aoa.push(['','','Act Luar Kota', ...PRODUCT_CODES.map(c=>grand.luarkota[c]), PRODUCT_CODES.reduce((s,c)=>s+grand.luarkota[c],0)]);
+  aoa.push(['','','Actual Total', ...PRODUCT_CODES.map(c=>grand.actual[c]), aSum]);
+  aoa.push(['','','Ach Realisasi %', ...PRODUCT_CODES.map(c=>grand.target[c]?grand.actual[c]/grand.target[c]:0), tSum?aSum/tSum:0]);
+  aoa.push(['','','Target Matic', ...PRODUCT_CODES.map(c=>maticCodes.includes(c)?grand.targetMatic[c]:''), tMaticSum]);
+  aoa.push(['','','Act Matic', ...PRODUCT_CODES.map(c=>maticCodes.includes(c)?grand.actMatic[c]:''), aMaticSum]);
+  aoa.push(['','','Ach Matic %', ...PRODUCT_CODES.map(c=>maticCodes.includes(c)?(grand.targetMatic[c]?grand.actMatic[c]/grand.targetMatic[c]:0):''), tMaticSum?aMaticSum/tMaticSum:0]);
+  aoa.push(['','','Target AOS', ...new Array(PRODUCT_CODES.length).fill(''), grandTargetAOS]);
+  aoa.push(['','','Act AOS', ...new Array(PRODUCT_CODES.length).fill(''), grandActAOS]);
+  aoa.push(['','','Ach AOS %', ...new Array(PRODUCT_CODES.length).fill(''), grandTargetAOS?grandActAOS/grandTargetAOS:0]);
+
+  const ws = XLSX.utils.aoa_to_sheet(aoa);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Pencapaian');
+  XLSX.writeFile(wb, `Pencapaian_${bulan}.xlsx`);
+});
+
+/* ============================= STATUS ============================= */
+function setStatus(msg){
+  document.getElementById('statusLine').textContent = msg;
+}
+
+/* ============================= TAB 5: TARGET QTY & KPI ============================= */
+function populateQtyMonthSelect(){
+  const keys = monthKeyList();
+  const sel = document.getElementById('qtyBulan');
+  sel.innerHTML = keys.map(k=>{
+    const [y,m]=k.split('-');
+    return `<option value="${k}">${MONTH_NAMES[parseInt(m)-1]} ${y}</option>`;
+  }).join('');
+  const now = new Date();
+  const cur = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+  if(keys.includes(cur)) sel.value = cur;
+}
+document.getElementById('qtyBulan').addEventListener('change', renderQtyKpiTab);
+document.getElementById('qtyWilayah').addEventListener('change', renderQtyKpiTab);
+document.getElementById('qtyDivisi').addEventListener('change', renderQtyKpiTab);
+
+const COLOR_LABEL = {'v-red':'Merah (0-30%)', 'v-yellow':'Kuning (31-79%)', 'v-plain':'Putih (80-100%)', 'v-green':'Hijau (>100%)'};
+
+function getQtyFilters(){
+  const l4 = (document.getElementById('qtyFilterL4')?.value || '').trim().toUpperCase();
+  const nama = (document.getElementById('qtyFilterNama')?.value || '').trim().toUpperCase();
+  const colors = new Set(
+    Array.from(document.querySelectorAll('.qty-color-filter:checked')).map(el=>el.value)
+  );
+  return {l4, nama, colors};
+}
+
+function applyQtyFilters(items, bulan, wil, filters){
+  const bulanNum = parseInt(bulan.split('-')[1]);
+  return items.filter(it=>{
+    if(filters.l4 && !String(it.l4||'').toUpperCase().includes(filters.l4)) return false;
+    if(filters.nama && !String(it.nama||'').toUpperCase().includes(filters.nama)) return false;
+    if(filters.colors && filters.colors.size < 4){
+      const t = it.target[String(bulanNum)] || 0;
+      const actualObj = state.qtyActual[bulan]?.[wil]?.[it.divisi] || {};
+      const a = actualObj[it.l4] || 0;
+      const pct = t? a/t : 0;
+      const cls = qtyAchClass(pct);
+      if(!filters.colors.has(cls)) return false;
+    }
+    return true;
+  });
+}
+
+function getOaCount(bulan, wil, div){
+  if(div === 'all'){
+    const s = new Set([...(state.oaSet[bulan]?.[wil]?.[1]||[]), ...(state.oaSet[bulan]?.[wil]?.[2]||[])]);
+    return s.size;
+  }
+  const arr = state.oaSet[bulan]?.[wil]?.[div];
+  return arr ? arr.length : 0;
+}
+function getSkuCount(bulan, wil, div){
+  if(div === 'all'){
+    const s = new Set([...(state.skuSet[bulan]?.[wil]?.[1]||[]), ...(state.skuSet[bulan]?.[wil]?.[2]||[])]);
+    return s.size;
+  }
+  const arr = state.skuSet[bulan]?.[wil]?.[div];
+  return arr ? arr.length : 0;
+}
+function getQtyActualTotal(bulan, wil, div){
+  if(div === 'all'){
+    const o1 = state.qtyActual[bulan]?.[wil]?.[1] || {};
+    const o2 = state.qtyActual[bulan]?.[wil]?.[2] || {};
+    return Object.values(o1).reduce((s,v)=>s+v,0) + Object.values(o2).reduce((s,v)=>s+v,0);
+  }
+  const obj = state.qtyActual[bulan]?.[wil]?.[div] || {};
+  return Object.values(obj).reduce((s,v)=>s+v,0);
+}
+function getQtyTargetTotal(wil, div, bulanNum){
+  const items = div === 'all' ? (state.qtyTargets[wil]||[]) : (state.qtyTargets[wil]||[]).filter(it=>it.divisi===div);
+  return items.reduce((s,it)=>s+(it.target[String(bulanNum)]||0),0);
+}
+
+function renderKpiBlock(bulan, wil, div){
+  const bulanNum = parseInt(bulan.split('-')[1]);
+  const km = state.kpiManual[bulan]?.[wil]?.[div] || {};
+  const targetCollection = km.targetCollection||0, actCollection = km.actCollection||0;
+  const targetOA = km.targetOA||0, targetSKU = km.targetSKU||0;
+  const actOA = getOaCount(bulan, wil, div);
+  const actSKU = getSkuCount(bulan, wil, div);
+  const targetQty = getQtyTargetTotal(wil, div, bulanNum);
+  const actQty = getQtyActualTotal(bulan, wil, div);
+  const pct = (a,t)=> t? fmtPct(a/t) : '0.0%';
+  return `
+  <div class="stat-grid">
+    <div class="stat"><div class="num">${pct(actCollection,targetCollection)}</div><div class="lbl">Ach Collection</div></div>
+    <div class="stat"><div class="num">${pct(actOA,targetOA)}</div><div class="lbl">Ach OA (${actOA}/${targetOA||'-'})</div></div>
+    <div class="stat"><div class="num">${pct(actSKU,targetSKU)}</div><div class="lbl">Ach SKU (${actSKU}/${targetSKU||'-'})</div></div>
+    <div class="stat"><div class="num">${pct(actQty,targetQty)}</div><div class="lbl">Ach Qty (${fmtRp(actQty)}/${fmtRp(targetQty)})</div></div>
+  </div>
+  <div class="row">
+    <div class="field"><label>Target Collection (Rp)</label><input type="number" id="kpiTargetCollection" value="${targetCollection||''}"></div>
+    <div class="field"><label>Act Collection (Rp)</label><input type="number" id="kpiActCollection" value="${actCollection||''}"></div>
+    <div class="field"><label>Target OA (toko)</label><input type="number" id="kpiTargetOA" value="${targetOA||''}"></div>
+    <div class="field"><label>Target SKU</label><input type="number" id="kpiTargetSKU" value="${targetSKU||''}"></div>
+    <button class="btn" id="kpiSaveBtn">Simpan KPI</button>
+  </div>
+  <small class="hint">Act OA &amp; Act SKU dihitung otomatis dari flat file yang sudah diupload untuk bulan ini (toko unik &amp; produk unik yang transaksi). Act Qty &amp; Target Qty dijumlahkan otomatis dari tabel SKU di bawah.</small>
+  `;
+}
+
+function qtyAchClass(pct){
+  // pct dalam desimal (1 = 100%)
+  if(pct <= 0.30) return 'v-red';
+  if(pct <= 0.79) return 'v-yellow';
+  if(pct <= 1.00) return 'v-plain';
+  return 'v-green';
+}
+function renderQtyTable(bulan, wil, div, filters){
+  const bulanNum = parseInt(bulan.split('-')[1]);
+  const allItems = div === 'all' ? (state.qtyTargets[wil]||[]) : (state.qtyTargets[wil]||[]).filter(it=>it.divisi===div);
+  const items = filters ? applyQtyFilters(allItems, bulan, wil, filters) : allItems;
+  let html = `<div class="sheet-wrap"><table class="sheet"><thead><tr>
+    <th>Kode L4</th><th style="text-align:left;">Nama Produk</th><th>Target Qty</th><th>Act Qty</th><th>Ach %</th>
+  </tr></thead><tbody>`;
+  let tTotal=0, aTotal=0;
+  const countByColor = {'v-red':0, 'v-yellow':0, 'v-plain':0, 'v-green':0};
+  if(items.length===0){
+    html += `<tr><td colspan="5" style="text-align:center; color:var(--sub); padding:16px;">Tidak ada SKU yang cocok dengan filter.</td></tr>`;
+  }
+  items.forEach(it=>{
+    const t = it.target[String(bulanNum)] || 0;
+    const actualObj = state.qtyActual[bulan]?.[wil]?.[it.divisi] || {};
+    const a = actualObj[it.l4] || 0;
+    tTotal+=t; aTotal+=a;
+    const pct = t? a/t : 0;
+    const cls = qtyAchClass(pct);
+    countByColor[cls]++;
+    html += `<tr>
+      <td>${it.l4}</td>
+      <td class="lbl-desc">${it.nama}</td>
+      <td><input type="number" class="qty-target-input" data-l4="${it.l4}" data-div="${it.divisi}" value="${Math.round(t)}" style="width:90px; text-align:right;"></td>
+      <td class="${cls}">${fmtRp(a)}</td>
+      <td class="v-pct">${t? fmtPct(a/t): '0.0%'}</td>
+    </tr>`;
+  });
+  html += `<tr class="divider"><td></td><td class="lbl-desc" style="font-weight:700;">Total</td><td class="v-total">${fmtRp(tTotal)}</td><td class="v-total">${fmtRp(aTotal)}</td><td class="v-pct">${tTotal?fmtPct(aTotal/tTotal):'0.0%'}</td></tr>`;
+  html += `</tbody></table></div>`;
+  html += `<div class="legend" style="margin-top:10px;">
+    <span><span class="dot" style="background:#FF0000;"></span>Merah (0–30%): <b>${countByColor['v-red']}</b> SKU</span>
+    <span><span class="dot" style="background:#FFFF00;"></span>Kuning (31–79%): <b>${countByColor['v-yellow']}</b> SKU</span>
+    <span><span class="dot" style="background:#fff; border:1px solid #999;"></span>Putih (80–100%): <b>${countByColor['v-plain']}</b> SKU</span>
+    <span><span class="dot" style="background:#3FAE7A;"></span>Hijau (&gt;100%): <b>${countByColor['v-green']}</b> SKU</span>
+  </div>`;
+  return html;
+}
+
+async function saveQtyTargetEdit(l4, wil, div, bulanNum, val){
+  const items = state.qtyTargets[wil] || [];
+  const item = items.find(it=>it.l4===l4 && it.divisi===div);
+  if(item){ item.target[String(bulanNum)] = val; await saveQtyTargets(); }
+}
+
+function refreshQtyTable(){
+  const bulan = document.getElementById('qtyBulan').value;
+  const wil = document.getElementById('qtyWilayah').value;
+  const divRaw = document.getElementById('qtyDivisi').value;
+  const div = divRaw === 'all' ? 'all' : parseInt(divRaw);
+  if(!bulan) return;
+  const filters = getQtyFilters();
+  document.getElementById('qtyTableArea').innerHTML = renderQtyTable(bulan, wil, div, filters);
+  document.querySelectorAll('.qty-target-input').forEach(inp=>{
+    inp.addEventListener('change', async ()=>{
+      const val = parseFloat(inp.value)||0;
+      const bulanNum = parseInt(bulan.split('-')[1]);
+      const itemDiv = parseInt(inp.dataset.div);
+      await saveQtyTargetEdit(inp.dataset.l4, wil, itemDiv, bulanNum, val);
+      refreshQtyTable();
+    });
+  });
+}
+
+function exportQtyTableToExcel(){
+  const bulan = document.getElementById('qtyBulan').value;
+  const wil = document.getElementById('qtyWilayah').value;
+  const divRaw = document.getElementById('qtyDivisi').value;
+  const div = divRaw === 'all' ? 'all' : parseInt(divRaw);
+  if(!bulan){ alert('Pilih bulan terlebih dahulu.'); return; }
+  const bulanNum = parseInt(bulan.split('-')[1]);
+  const filters = getQtyFilters();
+  const allItems = div === 'all' ? (state.qtyTargets[wil]||[]) : (state.qtyTargets[wil]||[]).filter(it=>it.divisi===div);
+  const items = applyQtyFilters(allItems, bulan, wil, filters);
+
+  const [y,m] = bulan.split('-');
+  const monthLabel = `${MONTH_NAMES[parseInt(m)-1]} ${y}`;
+  const wilLabel = `Wilayah ${wil}`;
+  const divLabel = div==='all' ? 'Divisi All' : `Divisi ${div}`;
+
+  const aoa = [];
+  aoa.push([`Target QTY per SKU (kode L4) — ${monthLabel} — ${wilLabel} — ${divLabel}`]);
+  aoa.push(['Kode L4','Nama Produk','Target Qty','Act Qty','Ach %','Warna']);
+  let tTotal=0, aTotal=0;
+  items.forEach(it=>{
+    const t = it.target[String(bulanNum)] || 0;
+    const actualObj = state.qtyActual[bulan]?.[wil]?.[it.divisi] || {};
+    const a = actualObj[it.l4] || 0;
+    tTotal+=t; aTotal+=a;
+    const pct = t? a/t : 0;
+    const cls = qtyAchClass(pct);
+    aoa.push([it.l4, it.nama, Math.round(t), a, t? Number((pct*100).toFixed(1)) : 0, COLOR_LABEL[cls]]);
+  });
+  aoa.push(['','Total', Math.round(tTotal), aTotal, tTotal? Number(((aTotal/tTotal)*100).toFixed(1)) : 0, '']);
+
+  const ws = XLSX.utils.aoa_to_sheet(aoa);
+  ws['!cols'] = [{wch:12},{wch:35},{wch:14},{wch:14},{wch:10},{wch:18}];
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Target QTY SKU');
+  XLSX.writeFile(wb, `Target_QTY_SKU_${bulan}_W${wil}_D${div}.xlsx`);
+}
+
+function bindQtyFilterEvents(){
+  document.getElementById('qtyFilterL4').addEventListener('input', refreshQtyTable);
+  document.getElementById('qtyFilterNama').addEventListener('input', refreshQtyTable);
+  document.querySelectorAll('.qty-color-filter').forEach(cb=>{
+    cb.addEventListener('change', refreshQtyTable);
+  });
+  document.getElementById('qtyExportBtn').addEventListener('click', exportQtyTableToExcel);
+}
+bindQtyFilterEvents();
+
+function renderQtyKpiTab(){
+  const bulan = document.getElementById('qtyBulan').value;
+  const wil = document.getElementById('qtyWilayah').value;
+  const divRaw = document.getElementById('qtyDivisi').value;
+  const div = divRaw === 'all' ? 'all' : parseInt(divRaw);
+  if(!bulan) return;
+  document.getElementById('kpiArea').innerHTML = renderKpiBlock(bulan, wil, div);
+  refreshQtyTable();
+
+  document.getElementById('kpiSaveBtn').addEventListener('click', async ()=>{
+    const path = ensurePath(state.kpiManual, [bulan, wil]);
+    path[div] = {
+      targetCollection: parseFloat(document.getElementById('kpiTargetCollection').value)||0,
+      actCollection: parseFloat(document.getElementById('kpiActCollection').value)||0,
+      targetOA: parseFloat(document.getElementById('kpiTargetOA').value)||0,
+      targetSKU: parseFloat(document.getElementById('kpiTargetSKU').value)||0,
+    };
+    await saveKpiManual();
+    renderQtyKpiTab();
+  });
+}
+
+/* ============================= INIT ============================= */
+document.getElementById('backupBtn').addEventListener('click', ()=>backupAllData(false));
+document.getElementById('backupLightBtn').addEventListener('click', ()=>backupAllData(true));
+document.getElementById('restoreFile').addEventListener('change', async (e)=>{
+  const file = e.target.files[0];
+  if(!file) return;
+  const replaceMode = document.getElementById('restoreReplaceMode').checked;
+  const msg = replaceMode
+    ? 'Ini akan MENGGANTI TOTAL semua data saat ini dengan isi file cadangan (data yang tidak ada di file cadangan akan hilang). Lanjutkan?'
+    : 'Data dari file cadangan akan digabungkan dengan data yang sudah ada saat ini (isian yang sama akan ditimpa versi cadangan, sisanya tetap). Lanjutkan?';
+  if(!confirm(msg)) { e.target.value=''; return; }
+  await restoreAllData(file, replaceMode ? 'replace' : 'merge');
+  renderTokoStats(); renderTokoTable(''); renderUnknownStores();
+  setStatus(replaceMode ? 'Data berhasil ditimpa dari cadangan.' : 'Data berhasil digabung dari cadangan.');
+  e.target.value='';
+});
+(async function init(){
+  populateMonthSelects();
+  populateQtyMonthSelect();
+  await loadState();
+  renderTokoStats();
+  renderTokoTable('');
+  renderUnknownStores();
+  const total = Object.keys(state.tokoMaster).length;
+  setStatus(total>0 ? `${total} toko tersimpan` : 'Belum ada data toko — silakan upload daftar toko');
+})();
+</script>
+<script>
+  if ("serviceWorker" in navigator) {
+    window.addEventListener("load", () => {
+      navigator.serviceWorker.register("service-worker.js").catch(console.error);
+    });
+  }
+</script>
+</body>
+</html>

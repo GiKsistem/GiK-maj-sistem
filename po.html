@@ -1,0 +1,646 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tracking PO Barang — Analisis Kebutuhan PO</title>
+<link rel="icon" type="image/png" href="favicon.png">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#161a1d">
+<link rel="apple-touch-icon" href="icon-192.png">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+  :root{
+    --ink:#1C2530;
+    --ink-soft:#48556A;
+    --paper:#F3F5F7;
+    --card:#FFFFFF;
+    --line:#DCE2E8;
+    --steel:#2E4057;
+    --steel-dark:#1C2530;
+    --amber:#D98A2B;
+    --amber-soft:#FBEBD4;
+    --teal:#2F9E68;
+    --teal-soft:#E1F4EA;
+    --red:#C4453B;
+    --red-soft:#FBE7E5;
+    --mono: 'IBM Plex Mono', ui-monospace, monospace;
+    --sans: 'Inter', -apple-system, sans-serif;
+    --disp: 'Space Grotesk', 'Inter', sans-serif;
+  }
+  @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
+
+  *{box-sizing:border-box;}
+  body{
+    margin:0; background:var(--paper); color:var(--ink);
+    font-family:var(--sans); line-height:1.5;
+  }
+  ::selection{ background:var(--amber-soft); }
+
+  header.topbar{
+    background:var(--steel-dark); color:#fff;
+    padding:22px 32px; display:flex; align-items:center; justify-content:space-between;
+    border-bottom:4px solid var(--amber);
+  }
+  header.topbar .brand{
+    font-family:var(--disp); font-weight:700; font-size:20px; letter-spacing:0.2px;
+    display:flex; align-items:center; gap:10px;
+  }
+  header.topbar .brand .tag{
+    font-family:var(--mono); font-size:11px; font-weight:400; color:#B9C2CE;
+    border:1px solid #3A4A5E; padding:3px 8px; border-radius:3px;
+  }
+  header.topbar .steps{
+    display:flex; gap:6px; font-family:var(--mono); font-size:12px; color:#8E9BAC;
+  }
+  header.topbar .steps span{ padding:4px 10px; border-radius:3px; }
+  header.topbar .steps span.active{ background:var(--amber); color:var(--steel-dark); font-weight:600; }
+
+  main{ max-width:1180px; margin:0 auto; padding:32px; }
+
+  .section-label{
+    font-family:var(--mono); font-size:12px; text-transform:uppercase; letter-spacing:1.2px;
+    color:var(--ink-soft); margin:0 0 12px 2px; display:flex; align-items:center; gap:8px;
+  }
+  .section-label .num{
+    width:20px; height:20px; border-radius:50%; background:var(--steel); color:#fff;
+    display:inline-flex; align-items:center; justify-content:center; font-size:11px;
+  }
+
+  .upload-row{ display:grid; grid-template-columns:repeat(3,1fr); gap:16px; margin-bottom:28px; }
+  .upload-card{
+    background:var(--card); border:1.5px dashed var(--line); border-radius:10px;
+    padding:18px; position:relative; transition:border-color .15s, background .15s;
+    cursor:pointer;
+  }
+  .upload-card:hover{ border-color:var(--steel); }
+  .upload-card.filled{ border-style:solid; border-color:var(--teal); background:var(--teal-soft); }
+  .upload-card.filled .corner{
+    position:absolute; top:0; right:0; background:var(--teal); color:#fff;
+    font-family:var(--mono); font-size:10px; padding:3px 8px 3px 10px;
+    border-radius:0 8px 0 8px;
+  }
+  .upload-card h3{
+    margin:0 0 4px; font-family:var(--disp); font-size:15px; font-weight:600;
+  }
+  .upload-card p.hint{ margin:0 0 14px; font-size:12.5px; color:var(--ink-soft); }
+  .upload-card input[type=file]{ display:none; }
+  .upload-card .dropzone{
+    border:1px solid var(--line); border-radius:6px; padding:14px; text-align:center;
+    font-size:12.5px; color:var(--ink-soft); background:var(--paper);
+  }
+  .upload-card .filestat{
+    margin-top:10px; font-family:var(--mono); font-size:12px; color:var(--steel);
+  }
+  .upload-card .filestat b{ color:var(--ink); }
+
+  .controls{
+    background:var(--card); border:1px solid var(--line); border-radius:10px;
+    padding:18px 20px; display:flex; align-items:center; gap:24px; margin-bottom:28px;
+    flex-wrap:wrap;
+  }
+  .controls .field{ display:flex; align-items:center; gap:10px; }
+  .controls label{ font-size:13px; font-weight:600; color:var(--ink); }
+  .controls input[type=number]{
+    width:70px; padding:8px 10px; border:1.5px solid var(--line); border-radius:6px;
+    font-family:var(--mono); font-size:14px; text-align:center;
+  }
+  .controls .buffer-hint{ font-size:12px; color:var(--ink-soft); }
+  button.primary{
+    background:var(--steel-dark); color:#fff; border:none; padding:11px 22px;
+    border-radius:6px; font-weight:600; font-size:13.5px; cursor:pointer;
+    font-family:var(--sans); transition:background .15s;
+  }
+  button.primary:hover{ background:var(--steel); }
+  button.primary:disabled{ background:#B9C2CE; cursor:not-allowed; }
+  button.ghost{
+    background:transparent; color:var(--steel-dark); border:1.5px solid var(--line);
+    padding:9px 16px; border-radius:6px; font-weight:600; font-size:13px; cursor:pointer;
+  }
+  button.ghost:hover{ border-color:var(--steel); }
+
+  .summary-row{ display:grid; grid-template-columns:repeat(4,1fr); gap:14px; margin-bottom:24px; }
+  .summary-card{
+    background:var(--card); border:1px solid var(--line); border-radius:10px; padding:16px 18px;
+    border-left:4px solid var(--steel);
+  }
+  .summary-card.kurang{ border-left-color:var(--red); }
+  .summary-card.lebih{ border-left-color:var(--amber); }
+  .summary-card.aman{ border-left-color:var(--teal); }
+  .summary-card .label{ font-size:11.5px; color:var(--ink-soft); text-transform:uppercase; letter-spacing:.6px; font-family:var(--mono); }
+  .summary-card .value{ font-family:var(--disp); font-size:28px; font-weight:700; margin-top:4px; }
+
+  .table-toolbar{
+    display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; gap:12px; flex-wrap:wrap;
+  }
+  .table-toolbar input[type=text]{
+    padding:9px 12px; border:1.5px solid var(--line); border-radius:6px; font-size:13px; width:260px;
+  }
+  .filter-chips{ display:flex; gap:8px; }
+  .chip{
+    padding:6px 12px; border-radius:20px; border:1.5px solid var(--line); font-size:12px;
+    cursor:pointer; font-weight:600; color:var(--ink-soft); background:#fff;
+  }
+  .chip.active{ background:var(--steel-dark); color:#fff; border-color:var(--steel-dark); }
+
+  .table-wrap{
+    background:var(--card); border:1px solid var(--line); border-radius:10px; overflow:hidden;
+  }
+  table{ width:100%; border-collapse:collapse; font-size:15px; }
+  thead th{
+    background:var(--steel-dark); color:#fff; text-align:left; padding:13px 16px;
+    font-family:var(--sans); font-size:12.5px; font-weight:700; text-transform:uppercase; letter-spacing:.4px;
+    cursor:pointer; user-select:none; white-space:nowrap;
+  }
+  thead th:hover{ background:var(--steel); }
+  thead th .arrow{ opacity:.6; font-size:11px; margin-left:4px; }
+  tbody tr{ border-bottom:1px solid var(--line); animation:fadein .25s ease-out; }
+  tbody tr:hover{ background:#F9FAFB; }
+  tbody td{ padding:12px 16px; font-family:var(--mono); font-size:14.5px; font-weight:600; color:var(--ink); white-space:nowrap; }
+  tbody td.nama{ font-family:var(--sans); white-space:normal; max-width:220px; font-size:14px; font-weight:500; }
+  @keyframes fadein{ from{opacity:0; transform:translateY(3px);} to{opacity:1; transform:translateY(0);} }
+
+  .badge{
+    display:inline-block; padding:5px 11px; border-radius:5px; font-family:var(--sans);
+    font-size:12.5px; font-weight:700; letter-spacing:.2px;
+  }
+  .badge.kurang{ background:var(--red-soft); color:var(--red); }
+  .badge.lebih{ background:var(--amber-soft); color:var(--amber); }
+  .badge.aman{ background:var(--teal-soft); color:var(--teal); }
+  .badge.baru{ background:#EAE7F3; color:#6A5AA8; }
+
+  .empty-state{
+    text-align:center; padding:60px 20px; color:var(--ink-soft);
+  }
+  .empty-state .icon{ font-size:32px; margin-bottom:10px; }
+  .empty-state p{ margin:4px 0; font-size:13.5px; }
+
+  footer.pagi{
+    display:flex; justify-content:space-between; align-items:center; padding:12px 14px;
+    font-size:12px; color:var(--ink-soft); border-top:1px solid var(--line);
+  }
+  .pager button{
+    border:1px solid var(--line); background:#fff; padding:5px 10px; border-radius:5px; cursor:pointer; margin-left:4px;
+  }
+  .pager button:disabled{ opacity:.4; cursor:not-allowed; }
+
+  @media (max-width:820px){
+    .upload-row{ grid-template-columns:1fr; }
+    .summary-row{ grid-template-columns:repeat(2,1fr); }
+  }
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand">
+    <a href="index.html" style="color:#B9C2CE; text-decoration:none; font-family:var(--mono); font-size:12px; border:1px solid #3A4A5E; padding:4px 9px; border-radius:4px; margin-right:6px;">‹ Menu</a>
+    Tracking PO Barang <span class="tag">ANALISIS KEBUTUHAN PO</span>
+  </div>
+  <div class="steps">
+    <span id="step1" class="active">1. UPLOAD</span>
+    <span id="step2">2. ATUR</span>
+    <span id="step3">3. HASIL</span>
+  </div>
+</header>
+
+<main>
+
+  <p class="section-label"><span class="num">1</span> Upload data</p>
+  <div class="upload-row">
+
+    <div class="upload-card" id="card-master" onclick="document.getElementById('file-master').click()">
+      <h3>Rata-rata Penjualan</h3>
+      <p class="hint">Data master — kolom ID SKU &amp; rata-rata/bulan</p>
+      <div class="dropzone">Klik untuk pilih file (.xlsx)</div>
+      <div class="filestat" id="stat-master"></div>
+      <input type="file" id="file-master" accept=".xlsx,.xls">
+    </div>
+
+    <div class="upload-card" id="card-stok" onclick="document.getElementById('file-stok').click()">
+      <h3>Stok Saat Ini</h3>
+      <p class="hint">Laporan stok gudang — ID Product &amp; Total Stock</p>
+      <div class="dropzone">Klik untuk pilih file (.xlsx)</div>
+      <div class="filestat" id="stat-stok"></div>
+      <input type="file" id="file-stok" accept=".xlsx,.xls">
+    </div>
+
+    <div class="upload-card" id="card-kirim" onclick="document.getElementById('file-kirim').click()">
+      <h3>Dalam Pengiriman</h3>
+      <p class="hint">Data supply — MATERIAL NUMBER &amp; BILL QTY</p>
+      <div class="dropzone">Klik untuk pilih file (.xlsx) — opsional</div>
+      <div class="filestat" id="stat-kirim"></div>
+      <input type="file" id="file-kirim" accept=".xlsx,.xls">
+    </div>
+
+  </div>
+
+  <p class="section-label"><span class="num">2</span> Hitung</p>
+  <div class="controls">
+    <div class="buffer-hint">Kebutuhan = Rata-rata Penjualan per Bulan &nbsp;·&nbsp; Selisih = (Stok + Dalam Pengiriman) − Kebutuhan</div>
+    <button class="primary" id="btnHitung" disabled>Hitung Kebutuhan PO</button>
+    <button class="ghost" id="btnSimpanSemua">💾 Simpan Semua ke Laptop</button>
+    <span id="statusSimpan" style="font-size:12px; color:var(--ink-soft);"></span>
+    <span style="flex:1;"></span>
+    <span id="btnHapusSimpanan" style="font-size:12px; color:var(--ink-soft); text-decoration:underline; cursor:pointer;">🗑 Hapus data tersimpan</span>
+  </div>
+
+  <p class="section-label"><span class="num">3</span> Hasil</p>
+  <div id="resultsArea">
+    <div class="empty-state">
+      <div class="icon">📦</div>
+      <p><b>Belum ada hasil.</b></p>
+      <p>Upload minimal file rata-rata penjualan &amp; stok saat ini, lalu klik "Hitung Kebutuhan PO".</p>
+    </div>
+  </div>
+
+</main>
+
+<script>
+let masterData = null, stokData = null, kirimData = null;
+let masterMeta = null, stokMeta = null, kirimMeta = null;
+const STORAGE_KEY = 'stockControlPO_savedData_v1';
+let resultRows = [];
+let sortState = { col:'selisih', dir:'asc' };
+let filterState = 'all';
+let searchState = '';
+let currentPage = 1;
+const PAGE_SIZE = 50;
+
+function findCol(headers, keywords){
+  // keywords: array of arrays, each inner array = all-substrings-must-match (case-insensitive)
+  for(const kws of keywords){
+    const hit = headers.find(h=>{
+      const hl = String(h).toLowerCase();
+      return kws.every(k=>hl.includes(k));
+    });
+    if(hit) return hit;
+  }
+  return null;
+}
+
+function readFile(file, callback){
+  const reader = new FileReader();
+  reader.onload = function(e){
+    try{
+      const data = new Uint8Array(e.target.result);
+      const wb = XLSX.read(data, {type:'array'});
+      const sheet = wb.Sheets[wb.SheetNames[0]];
+      // cari header row otomatis: baris pertama yang punya >=2 sel non-kosong dan bukan judul tunggal
+      const raw = XLSX.utils.sheet_to_json(sheet, {header:1, defval:null});
+      let headerRowIdx = 0;
+      for(let i=0;i<Math.min(raw.length,15);i++){
+        const row = raw[i];
+        const filled = row.filter(c=>c!==null && c!=='').length;
+        if(filled >= 3){ headerRowIdx = i; break; }
+      }
+      const headers = raw[headerRowIdx].map(h=>h===null?'':String(h).trim());
+      const rows = [];
+      const seenRows = new Set();
+      let dupCount = 0;
+      for(let i=headerRowIdx+1;i<raw.length;i++){
+        const r = raw[i];
+        if(!r || r.every(c=>c===null||c==='')) continue;
+        const rowKey = JSON.stringify(r);
+        if(seenRows.has(rowKey)){ dupCount++; continue; } // lewati baris yang persis sama (duplikat)
+        seenRows.add(rowKey);
+        const obj = {};
+        headers.forEach((h,idx)=>{ if(h) obj[h] = r[idx]; });
+        rows.push(obj);
+      }
+      callback(null, {headers, rows, dupCount});
+    }catch(err){
+      callback(err, null);
+    }
+  };
+  reader.onerror = function(){ callback(new Error('Gagal membaca file'), null); };
+  reader.readAsArrayBuffer(file);
+}
+
+function renderFileStat(statId, meta, map){
+  const dupNote = meta.dupCount>0 ? `<br><span style="color:#D98A2B">⚠ ${meta.dupCount} baris duplikat persis dilewati</span>` : '';
+  document.getElementById(statId).innerHTML = `<b>${meta.fileName}</b><br>${meta.rowCount} baris · ${Object.keys(map).length} SKU unik<br><span style="color:#48556A">pakai kolom: ${meta.skuCol} / ${meta.valCol}</span>${dupNote}`;
+}
+
+function setupUpload(inputId, cardId, statId, onParsed, requiredCols){
+  document.getElementById(inputId).addEventListener('change', function(e){
+    const file = e.target.files[0];
+    if(!file) return;
+    document.getElementById(statId).textContent = 'Membaca file...';
+    readFile(file, function(err, parsed){
+      if(err){
+        document.getElementById(statId).textContent = '⚠ Gagal membaca file. Pastikan format .xlsx valid.';
+        return;
+      }
+      const skuCol = findCol(parsed.headers, requiredCols.sku);
+      const valCol = findCol(parsed.headers, requiredCols.val);
+      if(!skuCol || !valCol){
+        document.getElementById(statId).innerHTML = `⚠ Kolom tidak ditemukan.<br>Kolom terbaca: ${parsed.headers.filter(h=>h).join(', ')}`;
+        return;
+      }
+      const map = {};
+      parsed.rows.forEach(r=>{
+        const sku = r[skuCol];
+        if(sku===null||sku===undefined||sku==='') return;
+        const key = String(sku).trim().toUpperCase();
+        const v = parseFloat(r[valCol]) || 0;
+        map[key] = (map[key]||0) + v; // jumlahkan kalau SKU duplikat (beda gudang dsb)
+      });
+      // file baru menimpa (overwrite) data slot ini di memori — lalu langsung disimpan ke browser
+      const meta = { fileName:file.name, rowCount:parsed.rows.length, skuCol, valCol, dupCount:parsed.dupCount };
+      onParsed(map, meta);
+      document.getElementById(cardId).classList.add('filled');
+      renderFileStat(statId, meta, map);
+      checkReady();
+      saveAllToStorage();
+    });
+  });
+}
+
+setupUpload('file-master','card-master','stat-master', function(map, meta){
+  masterData = map; masterMeta = meta;
+}, { sku:[['id','produk'],['id','product'],['sku'],['kode']], val:[['rata'],['saran'],['average'],['avg']] });
+
+setupUpload('file-stok','card-stok','stat-stok', function(map, meta){
+  stokData = map; stokMeta = meta;
+}, { sku:[['id','product'],['id','produk'],['sku'],['kode']], val:[['total','stock'],['stok'],['stock']] });
+
+setupUpload('file-kirim','card-kirim','stat-kirim', function(map, meta){
+  kirimData = map; kirimMeta = meta;
+}, { sku:[['material','number'],['id','product'],['sku'],['kode']], val:[['bill','qty'],['bill qty'],['qty']] });
+
+function showSimpanStatus(text){
+  const el = document.getElementById('statusSimpan');
+  if(el) el.textContent = text;
+}
+
+function saveAllToStorage(){
+  try{
+    const payload = {
+      master: masterData, masterMeta,
+      stok: stokData, stokMeta,
+      kirim: kirimData, kirimMeta,
+      savedAt: Date.now()
+    };
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+    showSimpanStatus('✅ Tersimpan di laptop ini · ' + new Date().toLocaleTimeString('id-ID'));
+  }catch(err){
+    showSimpanStatus('⚠ Gagal menyimpan (penyimpanan browser mungkin penuh)');
+  }
+}
+
+function restoreFromStorage(){
+  let raw;
+  try{ raw = localStorage.getItem(STORAGE_KEY); }catch(err){ return; }
+  if(!raw) return;
+  let payload;
+  try{ payload = JSON.parse(raw); }catch(err){ return; }
+
+  if(payload.master && payload.masterMeta){
+    masterData = payload.master; masterMeta = payload.masterMeta;
+    document.getElementById('card-master').classList.add('filled');
+    renderFileStat('stat-master', masterMeta, masterData);
+  }
+  if(payload.stok && payload.stokMeta){
+    stokData = payload.stok; stokMeta = payload.stokMeta;
+    document.getElementById('card-stok').classList.add('filled');
+    renderFileStat('stat-stok', stokMeta, stokData);
+  }
+  if(payload.kirim && payload.kirimMeta){
+    kirimData = payload.kirim; kirimMeta = payload.kirimMeta;
+    document.getElementById('card-kirim').classList.add('filled');
+    renderFileStat('stat-kirim', kirimMeta, kirimData);
+  }
+  checkReady();
+  if(payload.savedAt){
+    showSimpanStatus('📂 Data tersimpan dimuat (terakhir disimpan ' + new Date(payload.savedAt).toLocaleString('id-ID') + ')');
+  }
+}
+
+function hapusDataTersimpan(){
+  if(!confirm('Hapus semua data yang tersimpan di browser ini? File yang sedang tampil di layar tidak akan hilang sampai kamu refresh halaman.')) return;
+  try{ localStorage.removeItem(STORAGE_KEY); }catch(err){}
+  showSimpanStatus('🗑 Data tersimpan sudah dihapus');
+}
+
+document.getElementById('btnSimpanSemua').addEventListener('click', function(){
+  if(!masterData && !stokData && !kirimData){
+    showSimpanStatus('⚠ Belum ada file yang diupload');
+    return;
+  }
+  saveAllToStorage();
+});
+document.getElementById('btnHapusSimpanan').addEventListener('click', hapusDataTersimpan);
+
+restoreFromStorage();
+
+function checkReady(){
+  document.getElementById('btnHitung').disabled = !(masterData && stokData);
+  document.getElementById('step1').classList.remove('active');
+  document.getElementById('step2').classList.add('active');
+}
+
+document.getElementById('btnHitung').addEventListener('click', hitungKebutuhan);
+
+function hitungKebutuhan(){
+  const allSku = new Set([...Object.keys(masterData||{}), ...Object.keys(stokData||{})]);
+  const rows = [];
+  allSku.forEach(sku=>{
+    const adaHistori = Object.prototype.hasOwnProperty.call(masterData, sku);
+    const rata = masterData[sku] ?? 0;
+    const stok = stokData[sku] ?? 0;
+    const kirim = (kirimData && kirimData[sku]) ?? 0;
+    const proyeksi = stok + kirim;
+    const kebutuhan = rata; // kebutuhan = rata-rata penjualan per bulan
+    const selisih = proyeksi - kebutuhan;
+    let status;
+    if(!adaHistori){
+      status = 'baru'; // SKU ada di stok tapi tidak ada histori penjualan 2025 -> tidak bisa dihitung kebutuhannya
+    } else if(selisih < 0){
+      status = 'kurang';
+    } else if(kebutuhan > 0 && selisih > kebutuhan){
+      status = 'lebih';
+    } else if(kebutuhan === 0 && proyeksi > 0){
+      status = 'lebih';
+    } else {
+      status = 'aman';
+    }
+    rows.push({ sku, rata, stok, kirim, proyeksi, kebutuhan, selisih, status, adaHistori });
+  });
+  resultRows = rows;
+  currentPage = 1;
+  document.getElementById('step2').classList.remove('active');
+  document.getElementById('step3').classList.add('active');
+  renderResults();
+}
+
+function renderResults(){
+  const kurangCount = resultRows.filter(r=>r.status==='kurang').length;
+  const lebihCount = resultRows.filter(r=>r.status==='lebih').length;
+  const amanCount = resultRows.filter(r=>r.status==='aman').length;
+  const baruCount = resultRows.filter(r=>r.status==='baru').length;
+
+  let filtered = resultRows.filter(r=>{
+    if(filterState!=='all' && r.status!==filterState) return false;
+    if(searchState && !r.sku.toLowerCase().includes(searchState.toLowerCase())) return false;
+    return true;
+  });
+
+  filtered.sort((a,b)=>{
+    const dir = sortState.dir==='asc'?1:-1;
+    const av = a[sortState.col], bv = b[sortState.col];
+    if(typeof av === 'string') return av.localeCompare(bv)*dir;
+    return (av-bv)*dir;
+  });
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  if(currentPage > totalPages) currentPage = totalPages;
+  const pageRows = filtered.slice((currentPage-1)*PAGE_SIZE, currentPage*PAGE_SIZE);
+
+  const fmt = n => Math.round(n).toLocaleString('id-ID', {maximumFractionDigits:0});
+
+  const html = `
+    <div class="summary-row">
+      <div class="summary-card"><div class="label">Total SKU</div><div class="value">${resultRows.length}</div></div>
+      <div class="summary-card kurang"><div class="label">Stok Kurang</div><div class="value">${kurangCount}</div></div>
+      <div class="summary-card lebih"><div class="label">Stok Berlebih</div><div class="value">${lebihCount}</div></div>
+      <div class="summary-card aman"><div class="label">Stok Aman</div><div class="value">${amanCount}</div></div>
+    </div>
+    ${baruCount>0 ? `<div style="margin:-10px 0 18px; font-size:12.5px; color:var(--ink-soft);">
+      ℹ️ <b>${baruCount} SKU</b> ada di data stok tapi belum punya histori penjualan 2025 — belum bisa dihitung kebutuhannya, dikelompokkan terpisah sebagai "Belum Ada Histori".
+    </div>` : ''}
+
+    <div class="table-toolbar">
+      <div class="filter-chips">
+        <div class="chip ${filterState==='all'?'active':''}" data-f="all">Semua (${resultRows.length})</div>
+        <div class="chip ${filterState==='kurang'?'active':''}" data-f="kurang">Kurang (${kurangCount})</div>
+        <div class="chip ${filterState==='lebih'?'active':''}" data-f="lebih">Berlebih (${lebihCount})</div>
+        <div class="chip ${filterState==='aman'?'active':''}" data-f="aman">Aman (${amanCount})</div>
+        <div class="chip ${filterState==='baru'?'active':''}" data-f="baru">Belum Ada Histori (${baruCount})</div>
+      </div>
+      <div style="display:flex; gap:8px;">
+        <input type="text" id="searchBox" placeholder="Cari SKU..." value="${searchState}">
+        <button class="ghost" id="btnExport">Export Excel</button>
+      </div>
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th data-col="sku">SKU ${arrow('sku')}</th>
+            <th data-col="rata">Rata²/Bulan ${arrow('rata')}</th>
+            <th data-col="stok">Stok Saat Ini ${arrow('stok')}</th>
+            <th data-col="kirim">Dlm Pengiriman ${arrow('kirim')}</th>
+            <th data-col="proyeksi">Proyeksi Stok ${arrow('proyeksi')}</th>
+            <th data-col="kebutuhan">Kebutuhan ${arrow('kebutuhan')}</th>
+            <th data-col="selisih">Selisih ${arrow('selisih')}</th>
+            <th data-col="status">Status ${arrow('status')}</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${pageRows.map(r=>`
+            <tr>
+              <td>${r.sku}</td>
+              <td>${fmt(r.rata)}</td>
+              <td>${fmt(r.stok)}</td>
+              <td>${fmt(r.kirim)}</td>
+              <td>${fmt(r.proyeksi)}</td>
+              <td>${fmt(r.kebutuhan)}</td>
+              <td>${r.selisih<0?'−':''}${fmt(Math.abs(r.selisih))}</td>
+              <td><span class="badge ${r.status}">${labelStatus(r.status)}</span></td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+      <footer class="pagi">
+        <span>${filtered.length} SKU cocok filter · Halaman ${currentPage} / ${totalPages}</span>
+        <span class="pager">
+          <button id="prevPage" ${currentPage<=1?'disabled':''}>‹ Prev</button>
+          <button id="nextPage" ${currentPage>=totalPages?'disabled':''}>Next ›</button>
+        </span>
+      </footer>
+    </div>
+  `;
+  document.getElementById('resultsArea').innerHTML = html;
+
+  document.querySelectorAll('th[data-col]').forEach(th=>{
+    th.addEventListener('click', ()=>{
+      const col = th.getAttribute('data-col');
+      if(sortState.col===col) sortState.dir = sortState.dir==='asc'?'desc':'asc';
+      else { sortState.col = col; sortState.dir = 'asc'; }
+      renderResults();
+    });
+  });
+  document.querySelectorAll('.chip').forEach(chip=>{
+    chip.addEventListener('click', ()=>{ filterState = chip.getAttribute('data-f'); currentPage=1; renderResults(); });
+  });
+  const searchBox = document.getElementById('searchBox');
+  searchBox.addEventListener('input', (e)=>{ searchState = e.target.value; currentPage=1; renderResults(); });
+  searchBox.focus();
+  searchBox.setSelectionRange(searchState.length, searchState.length);
+
+  document.getElementById('btnExport').addEventListener('click', exportExcel);
+  const prevBtn = document.getElementById('prevPage');
+  const nextBtn = document.getElementById('nextPage');
+  if(prevBtn) prevBtn.addEventListener('click', ()=>{ currentPage--; renderResults(); });
+  if(nextBtn) nextBtn.addEventListener('click', ()=>{ currentPage++; renderResults(); });
+}
+
+function arrow(col){
+  if(sortState.col!==col) return '<span class="arrow">↕</span>';
+  return `<span class="arrow">${sortState.dir==='asc'?'↑':'↓'}</span>`;
+}
+function labelStatus(s){
+  if(s==='kurang') return 'KURANG — PERLU PO';
+  if(s==='lebih') return 'BERLEBIH';
+  if(s==='baru') return 'BELUM ADA HISTORI';
+  return 'AMAN';
+}
+
+function exportExcel(){
+  const headers = ['SKU','Rata-rata per Bulan','Stok Saat Ini','Dalam Pengiriman','Proyeksi Stok','Kebutuhan','Selisih','Status'];
+  const colWidths = [{wch:18},{wch:16},{wch:14},{wch:16},{wch:14},{wch:14},{wch:12},{wch:20}];
+
+  const toRows = arr => [...arr]
+    .sort((a,b)=>a.selisih-b.selisih)
+    .map(r=>[r.sku, r.rata, r.stok, r.kirim, r.proyeksi, r.kebutuhan, r.selisih, labelStatus(r.status)]);
+
+  const groups = [
+    { name:'Semua',              data: resultRows },
+    { name:'Kurang - Perlu PO',  data: resultRows.filter(r=>r.status==='kurang') },
+    { name:'Berlebih',           data: resultRows.filter(r=>r.status==='lebih') },
+    { name:'Aman',               data: resultRows.filter(r=>r.status==='aman') },
+    { name:'Belum Ada Histori',  data: resultRows.filter(r=>r.status==='baru') },
+  ];
+
+  const wb = XLSX.utils.book_new();
+
+  groups.forEach(g=>{
+    // tetap bikin sheet "Semua" walau kosong, sheet lain dilewati kalau kosong biar workbook rapi
+    if(g.data.length===0 && g.name!=='Semua') return;
+
+    const aoa = [headers, ...toRows(g.data)];
+    const ws = XLSX.utils.aoa_to_sheet(aoa);
+    ws['!cols'] = colWidths;
+    ws['!autofilter'] = { ref: ws['!ref'] };
+    // freeze baris header biar tetap kelihatan saat scroll
+    ws['!freeze'] = { xSplit: 0, ySplit: 1 };
+    ws['!sheetViews'] = [{ state:'frozen', ySplit:1, topLeftCell:'A2', activeCell:'A2' }];
+
+    XLSX.utils.book_append_sheet(wb, ws, g.name.substring(0,31));
+  });
+
+  const tanggal = new Date().toISOString().slice(0,10);
+  XLSX.writeFile(wb, `analisis_kebutuhan_po_${tanggal}.xlsx`);
+}
+</script>
+<script>
+  if ("serviceWorker" in navigator) {
+    window.addEventListener("load", () => {
+      navigator.serviceWorker.register("service-worker.js").catch(console.error);
+    });
+  }
+</script>
+</body>
+</html>

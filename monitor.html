@@ -1,0 +1,829 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Monitor Penjualan Toko &amp; SKU</title>
+<link rel="icon" type="image/png" href="favicon.png">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#161a1d">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.4/chart.umd.min.js"></script>
+<style>
+  :root{
+    --bg:#000000; --surface:#121212; --surface-2:#1A1A1A; --ink:#FFFFFF; --ink-soft:#D6D6D6;
+    --border:#3D3D3D; --accent:#FF9A4D; --accent-ink:#000000; --accent-soft:#3A2408;
+    --accent2:#6FE0FF; --accent2-soft:#0C2E36;
+    --danger:#FF6B5C; --danger-soft:#3A1310; --positive:#5CE0A0; --positive-soft:#0E3324;
+    --warn:#FFD24D; --warn-soft:#3A2C08;
+    --muted:#A8A8A8; --mono:'IBM Plex Mono',ui-monospace,monospace; --sans:'IBM Plex Sans',system-ui,sans-serif;
+    --shadow:0 1px 2px rgba(0,0,0,.5), 0 4px 20px rgba(0,0,0,.55); color-scheme:dark;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0; background:var(--bg); color:var(--ink); font-family:var(--sans); line-height:1.45; -webkit-font-smoothing:antialiased;}
+  .wrap{max-width:1240px; margin:0 auto; padding:28px 20px 80px;}
+  header.top{display:flex; align-items:flex-end; justify-content:space-between; gap:16px; padding-bottom:20px; margin-bottom:24px; border-bottom:2px solid var(--ink); flex-wrap:wrap;}
+  .brand{display:flex; align-items:baseline; gap:12px; flex-wrap:wrap;}
+  .brand .mark{font-family:var(--mono); font-size:12px; letter-spacing:.04em; background:var(--ink); color:var(--bg); padding:3px 7px; border-radius:3px;}
+  h1{font-size:24px; margin:0; font-weight:700; letter-spacing:-0.01em;}
+  .sub{color:var(--ink-soft); font-size:13.5px; margin-top:4px; max-width:64ch;}
+  .btn{font-family:var(--sans); font-size:13.5px; font-weight:600; cursor:pointer; border-radius:7px; padding:9px 15px; border:1px solid var(--border); background:var(--surface); color:var(--ink); transition:border-color .15s, background .15s;}
+  .btn:hover{border-color:var(--ink);}
+  .btn.primary{background:var(--accent); color:var(--accent-ink); border-color:var(--accent);}
+  .btn.primary:hover{filter:brightness(1.06);}
+  .btn.ghost{background:transparent;}
+  .btn:disabled{opacity:.45; cursor:not-allowed;}
+  section{margin-bottom:24px;}
+  .two-col{display:grid; grid-template-columns:1fr 1fr; gap:16px;}
+  @media (max-width:760px){.two-col{grid-template-columns:1fr;}}
+  .upload-card{background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:16px; box-shadow:var(--shadow);}
+  .upload-card h3{margin:0 0 3px; font-size:14px; display:flex; align-items:center; gap:8px;}
+  .upload-card h3 .num{font-family:var(--mono); font-size:11px; background:var(--ink); color:var(--bg); border-radius:50%; width:18px; height:18px; display:inline-flex; align-items:center; justify-content:center;}
+  .upload-card .desc{font-size:12.5px; color:var(--ink-soft); margin:0 0 12px;}
+  .dropzone{border:1.5px dashed var(--border); border-radius:8px; padding:20px 14px; text-align:center; background:var(--surface-2); transition:border-color .15s, background .15s; cursor:pointer;}
+  .dropzone.drag{border-color:var(--accent); background:var(--accent-soft);}
+  .dropzone p{margin:0; font-size:13px; color:var(--ink-soft);}
+  .dropzone strong{color:var(--ink); font-weight:600;}
+  .dz-icon{font-size:22px; margin-bottom:6px;}
+  input[type=file]{display:none;}
+  .filelog{margin-top:10px; font-family:var(--mono); font-size:11.5px; color:var(--ink-soft); max-height:120px; overflow-y:auto;}
+  .filelog .row{display:flex; justify-content:space-between; gap:10px; padding:4px 0; border-top:1px solid var(--border);}
+  .filelog .row:first-child{border-top:none;}
+  .filelog .ok{color:var(--positive);} .filelog .err{color:var(--danger);}
+  .mini-stats{display:flex; gap:8px; margin-top:10px; flex-wrap:wrap;}
+  .mini-stat{font-size:11px; font-family:var(--mono); background:var(--surface-2); border:1px solid var(--border); border-radius:5px; padding:3px 8px; color:var(--ink-soft);}
+  .stats{display:grid; grid-template-columns:repeat(5,1fr); gap:12px;}
+  @media (max-width:900px){.stats{grid-template-columns:repeat(2,1fr);}}
+  .stat{padding:14px 16px; background:var(--surface); border:1px solid var(--border); border-radius:10px;}
+  .stat .n{font-family:var(--mono); font-size:21px; font-weight:600; display:block;}
+  .stat .l{font-size:11.5px; color:var(--ink-soft); margin-top:2px;}
+  .controls{display:flex; gap:14px; align-items:flex-end; flex-wrap:wrap; background:var(--surface-2); border:1px solid var(--border); border-radius:10px; padding:14px 16px;}
+  .field label{display:block; font-size:11.5px; color:var(--ink-soft); margin-bottom:5px;}
+  .field select, .field input[type=text]{font-family:var(--sans); font-size:13.5px; padding:8px 10px; border-radius:6px; border:1px solid var(--border); background:var(--surface); color:var(--ink); min-width:140px;}
+  .field.grow{flex:1; min-width:180px;} .field.grow input{width:100%;}
+  h2.section-title{font-size:15px; margin:0 0 12px; display:flex; align-items:center; gap:9px;}
+  h2.section-title .tag{font-family:var(--mono); font-size:11px; color:var(--ink-soft); border:1px solid var(--border); border-radius:4px; padding:1px 6px;}
+  table{width:100%; border-collapse:collapse; font-size:13px;}
+  thead th{text-align:left; font-size:11px; color:var(--ink-soft); font-weight:600; padding:9px 11px; border-bottom:1px solid var(--border); white-space:nowrap; position:sticky; top:0; background:var(--surface); cursor:pointer; user-select:none;}
+  thead th:hover{color:var(--ink);}
+  thead th.sorted{color:var(--accent);}
+  tbody td{padding:9px 11px; border-bottom:1px solid var(--border); vertical-align:top;}
+  tbody tr.store-row{cursor:pointer;}
+  tbody tr.store-row:hover{background:var(--surface-2);}
+  tbody tr.store-row.open{background:var(--accent-soft);}
+  .num{font-family:var(--mono); text-align:right; white-space:nowrap;}
+  .kode{font-family:var(--mono); font-size:12px; color:var(--ink-soft);}
+  .name{font-weight:600;} .meta{color:var(--ink-soft); font-size:11.5px;}
+  .badge{display:inline-flex; align-items:center; justify-content:center; min-width:22px; font-family:var(--mono); font-size:11.5px; font-weight:600; padding:2px 7px; border-radius:20px;}
+  .badge.ok{background:var(--positive-soft); color:var(--positive);}
+  .badge.warn{background:var(--warn-soft); color:var(--warn);}
+  .badge.danger{background:var(--danger-soft); color:var(--danger);}
+  .badge.zero{background:var(--surface-2); color:var(--muted); border:1px dashed var(--border);}
+  .tablewrap{overflow-x:auto; border:1px solid var(--border); border-radius:10px; background:var(--surface);}
+  .detail{padding:18px 20px; border-top:1px solid var(--border); background:var(--surface-2); display:none;}
+  .detail.show{display:block;}
+  .detail-head{display:flex; justify-content:space-between; align-items:flex-start; gap:16px; flex-wrap:wrap; margin-bottom:14px;}
+  .sku-filter{display:flex; gap:8px; flex-wrap:wrap; margin-bottom:14px;}
+  .filter-chip{font-family:var(--sans); font-size:12px; font-weight:600; cursor:pointer; border-radius:20px; padding:7px 13px; border:1px solid var(--border); background:var(--surface); color:var(--ink-soft); transition:border-color .15s, background .15s, color .15s;}
+  .filter-chip:hover{border-color:var(--ink); color:var(--ink);}
+  .filter-chip.active{background:var(--accent); color:var(--accent-ink); border-color:var(--accent);}
+  .filter-chip .cnt{font-family:var(--mono); opacity:.8; margin-left:3px;}
+  .chart-box{width:260px; max-width:100%; height:150px;}
+  .matrix-wrap{overflow-x:auto; border:1px solid var(--border); border-radius:8px; margin-top:6px; background:var(--surface); max-height:520px; overflow-y:auto;}
+  .matrix{border-collapse:collapse; font-size:12.5px; min-width:100%;}
+  .matrix th, .matrix td{border-bottom:1px solid var(--border); border-right:1px solid var(--border); padding:7px 10px; white-space:nowrap;}
+  .matrix th{background:var(--surface-2); font-size:10.5px; color:var(--ink-soft); position:sticky; top:0; cursor:default;}
+  .matrix td.skucell{position:sticky; left:0; background:var(--surface); font-family:var(--mono); font-size:12px; text-align:left; max-width:280px; white-space:normal;}
+  .matrix td.num{text-align:right;}
+  .matrix tr.row-belum td.skucell{border-left:3px solid var(--danger);}
+  .matrix tr.row-kurang td.skucell{border-left:3px solid var(--warn);}
+  .matrix tr.row-baru td.skucell{border-left:3px solid var(--accent2);}
+  .status-cell{font-weight:600;}
+  .status-cell.belum{color:var(--danger);} .status-cell.kurang{color:var(--warn);} .status-cell.ok{color:var(--positive);} .status-cell.baru{color:var(--accent2);}
+  .matrix th.col-current{background:var(--accent2-soft); color:var(--accent2);}
+  .matrix td.col-current{background:color-mix(in srgb, var(--accent2-soft) 45%, transparent);}
+  .matrix td.col-selected{box-shadow:inset 0 0 0 1.5px var(--accent); font-weight:700;}
+  .legend{display:flex; gap:14px; flex-wrap:wrap; font-size:11.5px; color:var(--ink-soft); margin-top:10px;}
+  .legend span{display:inline-flex; align-items:center; gap:5px;}
+  .dot{width:9px; height:9px; border-radius:2px; display:inline-block;}
+  .empty-state{text-align:center; padding:50px 20px; color:var(--ink-soft); font-size:14px;}
+  .empty-state .big{font-size:34px; margin-bottom:10px;}
+  footer.hint{margin-top:30px; font-size:12px; color:var(--muted); text-align:center;}
+  ::-webkit-scrollbar{height:9px; width:9px;} ::-webkit-scrollbar-thumb{background:var(--border); border-radius:5px;}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="top">
+    <div class="brand">
+      <span class="mark">MAB01</span>
+      <div>
+        <h1>Monitor Penjualan Toko &amp; SKU</h1>
+        <div class="sub">Upload data master (historis) + data penjualan bulan ini &mdash; sistem hitung rata-rata QTY per SKU dari master, lalu tandai SKU yang belum/kurang diambil bulan ini per toko.</div>
+      </div>
+    </div>
+    <div style="display:flex; gap:8px; flex-wrap:wrap;">
+      <a href="index.html" class="btn ghost" style="text-decoration:none; display:inline-block;">&larr; Kembali ke Menu</a>
+      <button class="btn ghost" id="resetBtn">Reset semua data</button>
+    </div>
+  </header>
+
+  <section class="two-col">
+    <div class="upload-card">
+      <h3><span class="num">1</span> Data Master (historis)</h3>
+      <p class="desc">Data penjualan beberapa bulan/tahun ke belakang, dipakai sebagai patokan rata-rata QTY per SKU per toko.</p>
+      <div class="dropzone" id="dzMaster">
+        <div class="dz-icon">&#128193;</div>
+        <p><strong>Klik / tarik file ke sini</strong><br>bisa multi file &amp; multi sheet (.xls, .xlsx)</p>
+        <input type="file" id="fileMaster" accept=".xls,.xlsx" multiple>
+      </div>
+      <div class="mini-stats" id="miniMaster"></div>
+      <div class="filelog" id="logMaster"></div>
+    </div>
+
+    <div class="upload-card">
+      <h3><span class="num">2</span> Data Penjualan Bulan Ini</h3>
+      <p class="desc">Data penjualan bulan berjalan yang mau dicek terhadap rata-rata di atas.</p>
+      <div class="dropzone" id="dzCurrent">
+        <div class="dz-icon">&#128193;</div>
+        <p><strong>Klik / tarik file ke sini</strong><br>bisa multi file &amp; multi sheet (.xls, .xlsx)</p>
+        <input type="file" id="fileCurrent" accept=".xls,.xlsx" multiple>
+      </div>
+      <div class="mini-stats" id="miniCurrent"></div>
+      <div class="filelog" id="logCurrent"></div>
+    </div>
+  </section>
+
+  <div id="app" style="display:none;">
+    <section class="stats" id="stats"></section>
+
+    <section>
+      <div class="controls">
+        <div class="field">
+          <label for="curPeriodSel">Bulan yang dianalisis</label>
+          <select id="curPeriodSel"></select>
+        </div>
+        <div class="field">
+          <label for="kodePrefix">Kode toko (awalan)</label>
+          <input type="text" id="kodePrefix" placeholder="misal: BKT- atau PYK-">
+        </div>
+        <div class="field grow">
+          <label for="searchBox">Cari nama toko / sales / kota</label>
+          <input type="text" id="searchBox" placeholder="ketik untuk cari...">
+        </div>
+        <div class="field">
+          <label>&nbsp;</label>
+          <button class="btn" id="exportBtn">Export ke Excel</button>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <h2 class="section-title">Daftar toko <span class="tag" id="rangeLabel"></span></h2>
+      <div class="tablewrap">
+        <table id="rankTable">
+          <thead>
+            <tr>
+              <th style="width:22px;"></th>
+              <th data-k="kode">Kode Toko</th>
+              <th data-k="nama">Nama Toko</th>
+              <th data-k="sales">Sales</th>
+              <th class="num" data-k="omsetRata">Potensi Omset (Rata² Master)</th>
+              <th class="num" data-k="omsetIni">Omset Bln Ini</th>
+              <th class="num" data-k="totalSku">SKU Master</th>
+              <th class="num" data-k="ok">Sesuai/Lebih</th>
+              <th class="num" data-k="kurang">Kurang</th>
+              <th class="num" data-k="belum">Belum Diambil</th>
+              <th class="num" data-k="baru">SKU Baru</th>
+            </tr>
+          </thead>
+          <tbody id="rankBody"></tbody>
+        </table>
+      </div>
+      <div class="legend">
+        <span><span class="dot" style="background:var(--danger);"></span> Belum diambil bulan ini</span>
+        <span><span class="dot" style="background:var(--warn);"></span> Diambil tapi di bawah rata-rata</span>
+        <span><span class="dot" style="background:var(--positive);"></span> Sesuai / di atas rata-rata</span>
+        <span><span class="dot" style="background:var(--accent2);"></span> SKU baru (tidak ada di master)</span>
+      </div>
+    </section>
+  </div>
+
+  <div class="empty-state" id="emptyState">
+    <div class="big">&#128202;</div>
+    Upload Data Master dan Data Penjualan Bulan Ini di atas untuk mulai.
+  </div>
+
+  <footer class="hint">Diproses langsung di browser Anda &mdash; data tidak dikirim ke server manapun.</footer>
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  // ---------- state ----------
+  const master = { records: [], seen: new Set(), storeMap: new Map(), periods: [], periodDates: new Map() };
+  const current = { records: [], seen: new Set(), storeMap: new Map(), periods: [], periodDates: new Map() };
+  let selectedCurPeriod = null;
+  let openStoreId = null;
+  let skuFilter = "semua";
+  let sortKey = "omsetRata", sortDir = -1;
+  let chartInstance = null;
+
+  const monthNames = ["","Jan","Feb","Mar","Apr","Mei","Jun","Jul","Agu","Sep","Okt","Nov","Des"];
+  function periodLabel(pk){ if(!pk) return "-"; const [y,m]=pk.split("-"); return monthNames[parseInt(m,10)]+" "+y; }
+  function fmtRupiah(n){ return "Rp " + Math.round(n||0).toLocaleString("id-ID"); }
+  function fmtNum(n){ return Math.round(n||0).toLocaleString("id-ID"); }
+  function fmtQty(n){ return (Math.round((n||0)*10)/10).toLocaleString("id-ID"); }
+  function periodRangeLabel(bucket, pk){
+    const pd = bucket.periodDates.get(pk);
+    if(!pd) return "";
+    const minDay = parseInt(pd.min.split("-")[2],10);
+    const maxDay = parseInt(pd.max.split("-")[2],10);
+    if(minDay<=1 && maxDay>=28) return "";
+    if(minDay===maxDay) return " (tgl "+minDay+")";
+    return " (tgl "+minDay+"\u2013"+maxDay+")";
+  }
+  function combinedPeriods(){
+    const s = new Set(master.periods.concat(current.periods));
+    return Array.from(s).sort();
+  }
+
+  // ---------- column aliases ----------
+  const ALIASES = {
+    invoice:["NO INVOICE","INVOICE"], idPelanggan:["ID PELANGGAN","KODE PELANGGAN"],
+    namaPelanggan:["NAMA PELANGGAN","NAMA TOKO","PELANGGAN"], kota:["KOTA/KAB","KOTA","KABUPATEN"],
+    sales:["NAMA SALES","SALES"], tanggal:["TANGGAL","TGL"], idProduk:["ID PRODUK","KODE PRODUK","SKU"],
+    namaProduk:["NAMA PRODUK","PRODUK"], qty:["QTY","QUANTITY"], total:["TOTAL","GRAND TOTAL"],
+    bulan:["BULAN"], tahun:["TAHUN"]
+  };
+  function normHeader(h){ return String(h||"").trim().toUpperCase(); }
+  function buildColMap(headerRow){
+    const norm = headerRow.map(normHeader);
+    const map = {};
+    Object.keys(ALIASES).forEach(function(key){
+      let idx = -1;
+      ALIASES[key].some(function(a){ const f = norm.indexOf(a); if(f!==-1){ idx=f; return true;} return false; });
+      map[key] = idx;
+    });
+    return map;
+  }
+  function parseTanggalDMY(str){
+    if(!str) return null;
+    const m = String(str).match(/(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+    if(!m) return null;
+    return { hari:m[1].padStart(2,"0"), bulan:m[2].padStart(2,"0"), tahun:m[3] };
+  }
+
+  // ---------- upload wiring ----------
+  function wireUpload(dzId, inputId, target){
+    const dz = document.getElementById(dzId);
+    const input = document.getElementById(inputId);
+    dz.addEventListener("click", function(){ input.click(); });
+    dz.addEventListener("dragover", function(e){ e.preventDefault(); dz.classList.add("drag"); });
+    dz.addEventListener("dragleave", function(){ dz.classList.remove("drag"); });
+    dz.addEventListener("drop", function(e){
+      e.preventDefault(); dz.classList.remove("drag");
+      if(e.dataTransfer.files && e.dataTransfer.files.length) handleFiles(e.dataTransfer.files, target);
+    });
+    input.addEventListener("change", function(e){
+      if(e.target.files && e.target.files.length) handleFiles(e.target.files, target);
+      input.value = "";
+    });
+  }
+  wireUpload("dzMaster","fileMaster","master");
+  wireUpload("dzCurrent","fileCurrent","current");
+
+  function logLine(target, text, cls){
+    const el = document.getElementById(target==="master" ? "logMaster" : "logCurrent");
+    const row = document.createElement("div");
+    row.className = "row";
+    row.innerHTML = '<span class="'+(cls||"")+'">'+text+'</span>';
+    el.prepend(row);
+  }
+
+  function handleFiles(fileList, target){
+    const bucket = target === "master" ? master : current;
+    Array.prototype.forEach.call(fileList, function(file){
+      const reader = new FileReader();
+      reader.onload = function(e){
+        try{
+          const data = new Uint8Array(e.target.result);
+          const wb = XLSX.read(data, {type:"array"});
+          let added = 0, skipped = 0;
+          wb.SheetNames.forEach(function(sheetName){
+            const ws = wb.Sheets[sheetName];
+            const rows = XLSX.utils.sheet_to_json(ws, {header:1, raw:true, defval:""});
+            if(!rows.length) return;
+            const colMap = buildColMap(rows[0]);
+            if(colMap.idPelanggan===-1 || colMap.idProduk===-1) return;
+            for(let r=1;r<rows.length;r++){
+              const row = rows[r];
+              if(!row || row.length===0) continue;
+              const idPelanggan = colMap.idPelanggan!==-1 ? String(row[colMap.idPelanggan]||"").trim() : "";
+              if(!idPelanggan) continue;
+              const idProduk = colMap.idProduk!==-1 ? String(row[colMap.idProduk]||"").trim() : "";
+              if(!idProduk) continue;
+              let bulan = colMap.bulan!==-1 ? String(row[colMap.bulan]||"").trim() : "";
+              let tahun = colMap.tahun!==-1 ? String(row[colMap.tahun]||"").trim() : "";
+              const tglParsed = parseTanggalDMY(colMap.tanggal!==-1 ? row[colMap.tanggal] : null);
+              if(!bulan || !tahun){
+                if(tglParsed){ bulan = bulan || tglParsed.bulan; tahun = tahun || tglParsed.tahun; }
+              }
+              if(!bulan || !tahun) continue;
+              bulan = bulan.padStart(2,"0");
+              const dateISO = tglParsed ? (tahun+"-"+bulan+"-"+tglParsed.hari) : "";
+              const invoice = colMap.invoice!==-1 ? String(row[colMap.invoice]||"") : (r+"@"+sheetName);
+              const qty = colMap.qty!==-1 ? Number(row[colMap.qty])||0 : 0;
+              const total = colMap.total!==-1 ? Number(row[colMap.total])||0 : 0;
+              const dedupeKey = invoice+"|"+idProduk+"|"+qty+"|"+total+"|"+bulan+"|"+tahun;
+              if(bucket.seen.has(dedupeKey)){ skipped++; continue; }
+              bucket.seen.add(dedupeKey);
+              bucket.records.push({
+                invoice: invoice, idPelanggan: idPelanggan,
+                namaPelanggan: colMap.namaPelanggan!==-1 ? String(row[colMap.namaPelanggan]||"").trim() : idPelanggan,
+                kota: colMap.kota!==-1 ? String(row[colMap.kota]||"").trim() : "",
+                sales: colMap.sales!==-1 ? String(row[colMap.sales]||"").trim() : "",
+                idProduk: idProduk,
+                namaProduk: colMap.namaProduk!==-1 ? String(row[colMap.namaProduk]||"").trim() : idProduk,
+                qty: qty, total: total, periodKey: tahun+"-"+bulan, dateISO: dateISO
+              });
+              added++;
+            }
+          });
+          if(added>0) logLine(target, "&#10003; "+file.name+" &mdash; "+fmtNum(added)+" baris"+(skipped?" ("+fmtNum(skipped)+" duplikat)":""), "ok");
+          else logLine(target, "&#8212; "+file.name+" &mdash; tidak ada baris baru"+(skipped?" ("+fmtNum(skipped)+" duplikat)":""), "err");
+          rebuild();
+        } catch(err){
+          logLine(target, "&#10007; "+file.name+" &mdash; gagal dibaca ("+err.message+")", "err");
+        }
+      };
+      reader.readAsArrayBuffer(file);
+    });
+  }
+
+  document.getElementById("resetBtn").addEventListener("click", function(){
+    if(!master.records.length && !current.records.length) return;
+    if(!confirm("Hapus semua data master & bulan ini yang sudah diupload?")) return;
+    [master, current].forEach(function(b){ b.records=[]; b.seen.clear(); b.storeMap.clear(); b.periods=[]; b.periodDates=new Map(); });
+    selectedCurPeriod = null; openStoreId = null;
+    document.getElementById("logMaster").innerHTML = "";
+    document.getElementById("logCurrent").innerHTML = "";
+    rebuild();
+  });
+
+  // ---------- aggregation ----------
+  function aggregate(bucket){
+    bucket.storeMap.clear();
+    bucket.periodDates = new Map();
+    const periodSet = new Set();
+    bucket.records.forEach(function(rec){
+      periodSet.add(rec.periodKey);
+      if(rec.dateISO){
+        const pd = bucket.periodDates.get(rec.periodKey) || {min:rec.dateISO, max:rec.dateISO};
+        if(rec.dateISO < pd.min) pd.min = rec.dateISO;
+        if(rec.dateISO > pd.max) pd.max = rec.dateISO;
+        bucket.periodDates.set(rec.periodKey, pd);
+      }
+      if(!bucket.storeMap.has(rec.idPelanggan)){
+        bucket.storeMap.set(rec.idPelanggan, { nama:rec.namaPelanggan, kota:rec.kota, sales:rec.sales, periods:new Map() });
+      }
+      const store = bucket.storeMap.get(rec.idPelanggan);
+      if(rec.sales) store.sales = rec.sales;
+      if(rec.namaPelanggan) store.nama = rec.namaPelanggan;
+      if(!store.periods.has(rec.periodKey)) store.periods.set(rec.periodKey, {omset:0, skus:new Map()});
+      const per = store.periods.get(rec.periodKey);
+      per.omset += rec.total;
+      if(!per.skus.has(rec.idProduk)) per.skus.set(rec.idProduk, {nama:rec.namaProduk, qty:0, invoices:new Set()});
+      const sk = per.skus.get(rec.idProduk);
+      sk.qty += rec.qty; sk.invoices.add(rec.invoice);
+    });
+    bucket.periods = Array.from(periodSet).sort();
+  }
+
+  function rebuild(){
+    aggregate(master);
+    aggregate(current);
+
+    const app = document.getElementById("app");
+    const emptyState = document.getElementById("emptyState");
+    if(master.records.length===0 && current.records.length===0){
+      app.style.display="none"; emptyState.style.display="block"; return;
+    }
+    app.style.display="block"; emptyState.style.display="none";
+
+    renderMiniStats();
+    populateCurPeriodSelect();
+    renderStats();
+    renderRanking();
+  }
+
+  function renderMiniStats(){
+    const mm = document.getElementById("miniMaster");
+    mm.innerHTML = master.records.length ?
+      '<span class="mini-stat">'+fmtNum(master.storeMap.size)+' toko</span><span class="mini-stat">'+fmtNum(master.periods.length)+' bulan ('+(master.periods.length?periodLabel(master.periods[0])+' &ndash; '+periodLabel(master.periods[master.periods.length-1]):'')+')</span><span class="mini-stat">'+fmtNum(master.records.length)+' baris</span>' : "";
+    const mc = document.getElementById("miniCurrent");
+    if(current.records.length){
+      const periodsInfo = current.periods.map(function(pk){ return periodLabel(pk)+periodRangeLabel(current,pk); }).join(", ");
+      mc.innerHTML = '<span class="mini-stat">'+fmtNum(current.storeMap.size)+' toko</span><span class="mini-stat">'+fmtNum(current.periods.length)+' bulan: '+periodsInfo+'</span><span class="mini-stat">'+fmtNum(current.records.length)+' baris</span>';
+    } else mc.innerHTML = "";
+  }
+
+  function populateCurPeriodSelect(){
+    const sel = document.getElementById("curPeriodSel");
+    const prevVal = selectedCurPeriod;
+    const opts = current.periods.map(function(pk){ return '<option value="'+pk+'">'+periodLabel(pk)+periodRangeLabel(current,pk)+'</option>'; }).join("");
+    sel.innerHTML = opts || '<option value="">(belum ada data bulan ini)</option>';
+    if(current.periods.includes(prevVal)) sel.value = prevVal;
+    else if(current.periods.length) sel.value = current.periods[current.periods.length-1];
+    selectedCurPeriod = sel.value || null;
+  }
+  document.getElementById("curPeriodSel").addEventListener("change", function(e){
+    selectedCurPeriod = e.target.value || null; openStoreId = null; renderRanking();
+  });
+  document.getElementById("kodePrefix").addEventListener("input", function(){ renderRanking(); });
+  document.getElementById("searchBox").addEventListener("input", function(){ renderRanking(); });
+  document.querySelectorAll("#rankTable thead th[data-k]").forEach(function(th){
+    th.addEventListener("click", function(){
+      const k = th.getAttribute("data-k");
+      if(sortKey===k) sortDir = -sortDir; else { sortKey = k; sortDir = -1; }
+      renderRanking();
+    });
+  });
+
+  function renderStats(){
+    const stats = document.getElementById("stats");
+    const totalOmsetMaster = master.records.reduce(function(s,r){return s+r.total;},0);
+    const curPer = selectedCurPeriod;
+    let omsetIni = 0;
+    if(curPer){ current.records.forEach(function(r){ if(r.periodKey===curPer) omsetIni += r.total; }); }
+    stats.innerHTML =
+      statCard(fmtNum(master.storeMap.size), "Toko di Master") +
+      statCard(fmtNum(new Set(master.records.map(function(r){return r.idProduk;})).size), "SKU di Master") +
+      statCard(fmtNum(master.periods.length), "Bulan di Master") +
+      statCard(fmtNum(current.storeMap.size), "Toko Bulan Ini") +
+      statCard(fmtRupiah(omsetIni), "Omset "+(curPer?periodLabel(curPer):"-"));
+  }
+  function statCard(n,l){ return '<div class="stat"><span class="n">'+n+'</span><span class="l">'+l+'</span></div>'; }
+
+  // ---------- core comparison ----------
+  function computeStoreSkuData(idPelanggan){
+    const mStore = master.storeMap.get(idPelanggan);
+    const cStore = current.storeMap.get(idPelanggan);
+    const cPer = (cStore && selectedCurPeriod) ? cStore.periods.get(selectedCurPeriod) : null;
+    const curPeriods = current.periods; // dynamic: ikut jumlah bulan yang diupload di "Data Bulan Ini"
+
+    // idProduk -> {nama, totalQtyMaster, activeMonths(master), monthly:Map(currentPeriodKey->qty), inMaster}
+    const skuInfo = new Map();
+    function ensureInfo(idProduk, nama){
+      if(!skuInfo.has(idProduk)) skuInfo.set(idProduk, {nama:nama, totalQtyMaster:0, activeMonths:0, monthly:new Map(), inMaster:false});
+      return skuInfo.get(idProduk);
+    }
+    if(mStore){
+      mStore.periods.forEach(function(per){
+        per.skus.forEach(function(v, idProduk){
+          const info = ensureInfo(idProduk, v.nama);
+          info.inMaster = true;
+          info.totalQtyMaster += v.qty;
+          if(v.qty>0) info.activeMonths += 1;
+        });
+      });
+    }
+    if(cStore){
+      cStore.periods.forEach(function(per, pk){
+        per.skus.forEach(function(v, idProduk){
+          const info = ensureInfo(idProduk, v.nama);
+          info.monthly.set(pk, (info.monthly.get(pk)||0) + v.qty);
+        });
+      });
+    }
+
+    skuInfo.forEach(function(info){
+      // rata-rata dari master saja (tidak ditampilkan per bulan)
+      info.avg = master.periods.length ? info.totalQtyMaster / master.periods.length : 0;
+      // pola/rutin dihitung dari data "bulan ini" (bisa 1 bulan atau banyak bulan, sesuai yang diupload)
+      let activeCur = 0, first = null, last = null;
+      curPeriods.forEach(function(pk){
+        const q = info.monthly.get(pk) || 0;
+        if(q>0){ activeCur++; if(!first) first = pk; last = pk; }
+      });
+      info.activeMonthsCur = activeCur;
+      info.totalMonthsCur = curPeriods.length;
+      info.firstPeriod = first;
+      info.lastPeriod = last;
+      const ratio = curPeriods.length ? activeCur/curPeriods.length : 0;
+      info.routineRatio = ratio;
+      info.routineLabel = curPeriods.length<=1 ? "-" : (ratio>=0.75 ? "Rutin" : (ratio>=0.4 ? "Kadang-kadang" : "Jarang"));
+    });
+
+    skuInfo.forEach(function(info, idProduk){
+      const cSk = cPer ? cPer.skus.get(idProduk) : null;
+      info.qtyIni = cSk ? cSk.qty : 0;
+      if(!info.inMaster) info.status = "baru";
+      else if(info.qtyIni <= 0) info.status = "belum";
+      else if(info.qtyIni < info.avg) info.status = "kurang";
+      else info.status = "ok";
+    });
+
+    return { mStore:mStore, cStore:cStore, cPer:cPer, skuInfo:skuInfo, curPeriods:curPeriods };
+  }
+
+  function storeSummary(idPelanggan){
+    const d = computeStoreSkuData(idPelanggan);
+    let ok=0, kurang=0, belum=0, baru=0, totalSkuMaster=0;
+    d.skuInfo.forEach(function(info){
+      if(info.inMaster) totalSkuMaster++;
+      if(info.status==="ok") ok++;
+      else if(info.status==="kurang") kurang++;
+      else if(info.status==="belum") belum++;
+      else if(info.status==="baru") baru++;
+    });
+    const nama = (d.cStore && d.cStore.nama) || (d.mStore && d.mStore.nama) || idPelanggan;
+    const kota = (d.cStore && d.cStore.kota) || (d.mStore && d.mStore.kota) || "";
+    const sales = (d.cStore && d.cStore.sales) || (d.mStore && d.mStore.sales) || "";
+    const totalOmsetMaster = d.mStore ? Array.from(d.mStore.periods.values()).reduce(function(s,p){return s+p.omset;},0) : 0;
+    const omsetRata = master.periods.length ? totalOmsetMaster/master.periods.length : 0;
+    const omsetIni = d.cPer ? d.cPer.omset : 0;
+    return {
+      idPelanggan:idPelanggan, nama:nama, kota:kota, sales:sales,
+      totalSku:totalSkuMaster, ok:ok, kurang:kurang, belum:belum, baru:baru,
+      omsetIni:omsetIni, omsetRata:omsetRata
+    };
+  }
+
+  function renderRanking(){
+    document.getElementById("rangeLabel").textContent = selectedCurPeriod ? periodLabel(selectedCurPeriod) : "belum pilih bulan";
+    const prefix = document.getElementById("kodePrefix").value.trim().toLowerCase();
+    const q = document.getElementById("searchBox").value.trim().toLowerCase();
+
+    const ids = new Set();
+    master.storeMap.forEach(function(v,k){ ids.add(k); });
+    current.storeMap.forEach(function(v,k){ ids.add(k); });
+
+    let rows = [];
+    ids.forEach(function(id){
+      if(prefix && id.toLowerCase().indexOf(prefix)!==0) return;
+      const row = storeSummary(id);
+      if(q){
+        const hay = (row.nama+" "+row.sales+" "+row.kota).toLowerCase();
+        if(hay.indexOf(q)===-1) return;
+      }
+      rows.push(row);
+    });
+
+    rows.sort(function(a,b){
+      let av=a[sortKey], bv=b[sortKey];
+      if(typeof av === "string"){ av=av.toLowerCase(); bv=bv.toLowerCase(); return sortDir*(av<bv?-1:av>bv?1:0); }
+      return sortDir*((av||0)-(bv||0));
+    });
+
+    document.querySelectorAll("#rankTable thead th[data-k]").forEach(function(th){
+      th.classList.toggle("sorted", th.getAttribute("data-k")===sortKey);
+    });
+
+    const tbody = document.getElementById("rankBody");
+    tbody.innerHTML = "";
+    if(!selectedCurPeriod){
+      tbody.innerHTML = '<tr><td colspan="11" style="text-align:center; color:var(--ink-soft); padding:24px;">Upload data penjualan bulan ini dulu, lalu pilih bulan yang mau dianalisis.</td></tr>';
+      return;
+    }
+    if(rows.length===0){
+      tbody.innerHTML = '<tr><td colspan="11" style="text-align:center; color:var(--ink-soft); padding:24px;">Tidak ada toko yang cocok dengan filter.</td></tr>';
+      return;
+    }
+
+    rows.forEach(function(row){
+      const tr = document.createElement("tr");
+      tr.className = "store-row" + (openStoreId===row.idPelanggan ? " open" : "");
+      tr.innerHTML =
+        '<td>'+(openStoreId===row.idPelanggan?"&#9660;":"&#9654;")+'</td>'+
+        '<td class="kode">'+escapeHtml(row.idPelanggan)+'</td>'+
+        '<td><div class="name">'+escapeHtml(row.nama)+'</div><div class="meta">'+escapeHtml(row.kota||"")+'</div></td>'+
+        '<td class="meta">'+escapeHtml(row.sales||"-")+'</td>'+
+        '<td class="num">'+fmtRupiah(row.omsetRata)+'</td>'+
+        '<td class="num">'+fmtRupiah(row.omsetIni)+'</td>'+
+        '<td class="num">'+row.totalSku+'</td>'+
+        '<td class="num">'+(row.ok?'<span class="badge ok">'+row.ok+'</span>':'<span class="badge zero">0</span>')+'</td>'+
+        '<td class="num">'+(row.kurang?'<span class="badge warn">'+row.kurang+'</span>':'<span class="badge zero">0</span>')+'</td>'+
+        '<td class="num">'+(row.belum?'<span class="badge danger">'+row.belum+'</span>':'<span class="badge zero">0</span>')+'</td>'+
+        '<td class="num">'+(row.baru?'<span class="badge" style="background:var(--accent2-soft); color:var(--accent2);">'+row.baru+'</span>':'<span class="badge zero">0</span>')+'</td>';
+      tr.addEventListener("click", function(){
+        const wasOpen = openStoreId===row.idPelanggan;
+        openStoreId = wasOpen ? null : row.idPelanggan;
+        if(!wasOpen) skuFilter = "semua";
+        renderRanking();
+        if(openStoreId){
+          setTimeout(function(){
+            const el = document.getElementById("detail-"+cssSafe(openStoreId));
+            if(el) el.scrollIntoView({behavior:"smooth", block:"nearest"});
+          }, 30);
+        }
+      });
+      tbody.appendChild(tr);
+
+      if(openStoreId===row.idPelanggan){
+        const detailTr = document.createElement("tr");
+        const td = document.createElement("td");
+        td.colSpan = 11; td.style.padding = "0";
+        const div = document.createElement("div");
+        div.className = "detail show";
+        div.id = "detail-"+cssSafe(row.idPelanggan);
+        div.innerHTML = buildDetailHtml(row.idPelanggan);
+        td.appendChild(div);
+        detailTr.appendChild(td);
+        tbody.appendChild(detailTr);
+        div.querySelectorAll(".filter-chip").forEach(function(btn){
+          btn.addEventListener("click", function(){
+            skuFilter = btn.getAttribute("data-filter");
+            renderRanking();
+          });
+        });
+        setTimeout(function(){ drawTrendChart(row.idPelanggan); }, 10);
+      }
+    });
+  }
+
+  function buildDetailHtml(idPelanggan){
+    const d = computeStoreSkuData(idPelanggan);
+    const nama = (d.cStore && d.cStore.nama) || (d.mStore && d.mStore.nama) || idPelanggan;
+    const kota = (d.cStore && d.cStore.kota) || (d.mStore && d.mStore.kota) || "";
+    const sales = (d.cStore && d.cStore.sales) || (d.mStore && d.mStore.sales) || "";
+    const curPeriods = d.curPeriods;
+
+    const entries = Array.from(d.skuInfo.entries()).map(function(pair){
+      return { idProduk:pair[0], info:pair[1] };
+    });
+    const order = {baru:0, belum:1, kurang:2, ok:3};
+    entries.sort(function(a,b){
+      const oa = order[a.info.status], ob = order[b.info.status];
+      if(oa!==ob) return oa-ob;
+      return (b.info.qtyIni||0)-(a.info.qtyIni||0);
+    });
+
+    // ---------- filter SKU ----------
+    function isSudahDiambil(info){ return info.status==="ok" || info.status==="kurang"; }
+    function isBelumSamaSekali(info){ return info.status==="belum" && info.activeMonthsCur===0; }
+    function isBaru(info){ return info.status==="baru"; }
+    const filterChips = [
+      { key:"semua", label:"Semua SKU", count: entries.length },
+      { key:"sudah", label:"Sudah Diambil", count: entries.filter(function(e){return isSudahDiambil(e.info);}).length },
+      { key:"belumSekali", label:"Belum Diambil Sama Sekali", count: entries.filter(function(e){return isBelumSamaSekali(e.info);}).length },
+      { key:"baru", label:"SKU Baru", count: entries.filter(function(e){return isBaru(e.info);}).length }
+    ];
+    let filteredEntries = entries;
+    if(skuFilter==="sudah") filteredEntries = entries.filter(function(e){return isSudahDiambil(e.info);});
+    else if(skuFilter==="belumSekali") filteredEntries = entries.filter(function(e){return isBelumSamaSekali(e.info);});
+    else if(skuFilter==="baru") filteredEntries = entries.filter(function(e){return isBaru(e.info);});
+    const chipsHtml = filterChips.map(function(c){
+      return '<button type="button" class="filter-chip'+(skuFilter===c.key?' active':'')+'" data-filter="'+c.key+'">'+c.label+'<span class="cnt">'+c.count+'</span></button>';
+    }).join("");
+
+    function statusLabelText(s){
+      if(s==="belum") return "Belum diambil";
+      if(s==="kurang") return "Kurang dari rata-rata";
+      if(s==="baru") return "SKU baru";
+      return "Sesuai / lebih";
+    }
+
+    const periodCols = curPeriods.map(function(pk){
+      const isSelected = pk===selectedCurPeriod;
+      const label = periodLabel(pk) + periodRangeLabel(current,pk);
+      return '<th class="num'+(isSelected?' col-selected':'')+'" style="top:29px;">'+label+'</th>';
+    }).join("");
+
+    let rowsHtml = filteredEntries.map(function(e){
+      const info = e.info;
+      const rowCls = "row-"+info.status;
+      const monthCells = curPeriods.map(function(pk){
+        const isSelected = pk===selectedCurPeriod;
+        const q = info.monthly.get(pk) || 0;
+        const cls = "num"+(isSelected?" col-selected":"");
+        return '<td class="'+cls+'">'+(q>0?fmtQty(q):'<span class="meta">&#8212;</span>')+'</td>';
+      }).join("");
+      const polaRange = info.firstPeriod ? (periodLabel(info.firstPeriod)+" &ndash; "+periodLabel(info.lastPeriod)) : "-";
+      return '<tr class="'+rowCls+'">'+
+        '<td class="skucell">'+escapeHtml(e.idProduk)+' <span class="meta">'+escapeHtml(info.nama)+'</span></td>'+
+        monthCells+
+        '<td class="num">'+(info.inMaster?fmtQty(info.avg):'<span class="meta">&#8212;</span>')+'</td>'+
+        '<td class="num">'+(info.inMaster?(info.activeMonths+' / '+master.periods.length):'<span class="meta">&#8212;</span>')+'</td>'+
+        '<td>'+info.routineLabel+'</td>'+
+        '<td class="meta">'+polaRange+'</td>'+
+        '<td class="status-cell '+info.status+'">'+statusLabelText(info.status)+'</td>'+
+        '</tr>';
+    }).join("");
+
+    if(entries.length===0){
+      rowsHtml = '<tr><td colspan="'+(curPeriods.length+6)+'" style="text-align:center; color:var(--ink-soft); padding:16px;">Tidak ada data SKU untuk toko ini.</td></tr>';
+    } else if(filteredEntries.length===0){
+      rowsHtml = '<tr><td colspan="'+(curPeriods.length+6)+'" style="text-align:center; color:var(--ink-soft); padding:16px;">Tidak ada SKU yang cocok dengan filter ini.</td></tr>';
+    }
+
+    const bulanIniHeader = curPeriods.length ? ('<th colspan="'+curPeriods.length+'" style="text-align:center;">Data Bulan Ini (per bulan)</th>') : '<th>Data Bulan Ini</th>';
+
+    return ''+
+      '<div class="detail-head">'+
+        '<div>'+
+          '<div style="font-weight:600; font-size:14px; margin-bottom:2px;">'+escapeHtml(nama)+' <span class="kode">('+escapeHtml(idPelanggan)+')</span></div>'+
+          '<div class="meta">'+escapeHtml(kota||"")+' &middot; Sales: '+escapeHtml(sales||"-")+'</div>'+
+        '</div>'+
+        '<div class="chart-box"><canvas id="chart-'+cssSafe(idPelanggan)+'"></canvas></div>'+
+      '</div>'+
+      '<div class="sku-filter">'+chipsHtml+'</div>'+
+      '<div class="matrix-wrap">'+
+        '<table class="matrix"><thead>'+
+        '<tr><th style="position:sticky;left:0; z-index:2;" rowspan="2">SKU</th>'+bulanIniHeader+
+        '<th rowspan="2" class="num">Rata²/Bln (Master)</th>'+
+        '<th rowspan="2" class="num">Bulan Aktif (Master)</th>'+
+        '<th rowspan="2">Pola</th>'+
+        '<th rowspan="2">Rentang Beli</th>'+
+        '<th rowspan="2">Status ('+(selectedCurPeriod?periodLabel(selectedCurPeriod):"-")+')</th></tr>'+
+        '<tr>'+periodCols+'</tr>'+
+        '</thead><tbody>'+rowsHtml+'</tbody></table>'+
+      '</div>'+
+      '<div class="legend">'+
+        '<span><span class="dot" style="background:var(--accent);"></span> Kolom bulan yang sedang dianalisis</span>'+
+      '</div>';
+  }
+
+  function drawTrendChart(idPelanggan){
+    const canvas = document.getElementById("chart-"+cssSafe(idPelanggan));
+    if(!canvas) return;
+    const mStore = master.storeMap.get(idPelanggan);
+    const cStore = current.storeMap.get(idPelanggan);
+    const periods = combinedPeriods();
+    const labels = periods.map(function(pk){
+      return periodLabel(pk) + (!master.periods.includes(pk) ? " *" : "");
+    });
+    const data = periods.map(function(pk){
+      const mPer = mStore ? mStore.periods.get(pk) : null;
+      const cPer = cStore ? cStore.periods.get(pk) : null;
+      return (mPer?mPer.omset:0) + (cPer?cPer.omset:0);
+    });
+    if(chartInstance){ chartInstance.destroy(); }
+    const styles = getComputedStyle(document.documentElement);
+    const accentColor = styles.getPropertyValue("--accent").trim();
+    const accent2Color = styles.getPropertyValue("--accent2").trim();
+    const colors = periods.map(function(pk){ return master.periods.includes(pk) ? accentColor : accent2Color; });
+    chartInstance = new Chart(canvas.getContext("2d"), {
+      type:"bar",
+      data:{ labels:labels, datasets:[{ data:data, backgroundColor:colors }] },
+      options:{
+        plugins:{legend:{display:false}, title:{display:true, text:"Omset per bulan (jingga=master, biru=bulan berjalan)", font:{size:9.5}}},
+        scales:{ y:{ticks:{callback:function(v){return (v/1000).toLocaleString("id-ID")+"k";}, font:{size:9}}}, x:{ticks:{font:{size:8.5}}} },
+        maintainAspectRatio:false
+      }
+    });
+  }
+
+  // ---------- export ----------
+  document.getElementById("exportBtn").addEventListener("click", function(){
+    if(!selectedCurPeriod){ alert("Pilih bulan yang dianalisis dulu."); return; }
+    const rows = [["Kode Toko","Nama Toko","Kota","Sales","SKU Master","Sesuai/Lebih","Kurang","Belum Diambil","SKU Baru","Omset Bulan Ini","Rata-rata Omset/Bulan"]];
+    const ids = new Set();
+    master.storeMap.forEach(function(v,k){ ids.add(k); });
+    current.storeMap.forEach(function(v,k){ ids.add(k); });
+    ids.forEach(function(id){
+      const row = storeSummary(id);
+      rows.push([row.idPelanggan, row.nama, row.kota, row.sales, row.totalSku, row.ok, row.kurang, row.belum, row.baru, row.omsetIni, Math.round(row.omsetRata)]);
+    });
+    // sheet 2: detail per SKU for all stores (rata-rata master + matrix bulan ini + pola/rutin)
+    const detailHeader = ["Kode Toko","Nama Toko","Kode SKU","Nama SKU","Rata² Qty/Bln (Master)","Bulan Aktif (Master)","Total Bulan Master","Qty Bulan Ini","Status","Bulan Aktif (Bulan Ini)","Total Bulan Diupload","Pola","Bulan Pertama Beli","Bulan Terakhir Beli"].concat(current.periods.map(periodLabel));
+    const detailRows = [detailHeader];
+    ids.forEach(function(id){
+      const d = computeStoreSkuData(id);
+      const nama = (d.cStore && d.cStore.nama) || (d.mStore && d.mStore.nama) || id;
+      d.skuInfo.forEach(function(info, idProduk){
+        const statusLabel = info.status==="belum" ? "Belum diambil" : (info.status==="kurang" ? "Kurang dari rata-rata" : (info.status==="baru" ? "SKU baru" : "Sesuai/lebih"));
+        const baseRow = [
+          id, nama, idProduk, info.nama,
+          info.inMaster ? Math.round(info.avg*10)/10 : "-",
+          info.inMaster ? info.activeMonths : "-",
+          master.periods.length, info.qtyIni, statusLabel,
+          info.activeMonthsCur, info.totalMonthsCur, info.routineLabel,
+          info.firstPeriod ? periodLabel(info.firstPeriod) : "-",
+          info.lastPeriod ? periodLabel(info.lastPeriod) : "-"
+        ];
+        const monthlyVals = current.periods.map(function(pk){ return info.monthly.get(pk) || 0; });
+        detailRows.push(baseRow.concat(monthlyVals));
+      });
+    });
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(rows), "Ringkasan Toko");
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(detailRows), "Detail SKU");
+    XLSX.writeFile(wb, "monitor-toko-"+periodLabel(selectedCurPeriod).replace(" ","")+".xlsx");
+  });
+
+  // ---------- utils ----------
+  function escapeHtml(s){ return String(s).replace(/[&<>"']/g, function(c){ return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]; }); }
+  function cssSafe(s){ return String(s).replace(/[^a-zA-Z0-9]/g,"_"); }
+
+  rebuild();
+})();
+</script>
+</body>
+</html>
